@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<answers version="1">
+  <sources>
+    <source id="launcher" kind="ftp"/>
+  </sources>
+  <license accepted="maybe"/>
+</answers>

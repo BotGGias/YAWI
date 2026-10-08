@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=YAWI
+Comment=Setup wizard for your-installer
+Exec=yawi-installer
+Icon=yawi-installer
+Categories=Utility;
+Terminal=false

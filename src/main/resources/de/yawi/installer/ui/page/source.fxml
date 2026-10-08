@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.VBox?>
+
+<!-- Source page content: one block per source that can be obtained in more
+     than one way (built by SourcePageController), each with its radio
+     buttons and the result of the online version check. -->
+<VBox spacing="10.0" xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="de.yawi.installer.ui.page.SourcePageController">
+   <children>
+      <Label fx:id="hint" text="%source.hint" wrapText="true" />
+      <VBox fx:id="sources" spacing="14.0" />
+   </children>
+</VBox>

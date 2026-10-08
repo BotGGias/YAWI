@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Rollback tests: a run-command with a reverse operation, one without, and a failing one. -->
+<installer schemaVersion="1">
+  <product id="rb" version="1"><name>Rollback</name></product>
+  <languages default="en"><language code="en"/></languages>
+  <wizard><page name="welcome"/><page name="components"/><page name="summary"/></wizard>
+  <destination><default os="linux">$HOME/rb</default><default os="windows">%LOCALAPPDATA%\rb</default><default os="macos">$HOME/rb</default></destination>
+  <components>
+    <component id="core" required="true" size="1MiB">
+      <name>Core</name>
+      <step ref="mk"/>
+      <step ref="register"/>
+      <step ref="no-reverse"/>
+      <step ref="boom"/>
+    </component>
+  </components>
+  <steps>
+    <step id="mk" type="mkdir"><to>${destination}/made</to></step>
+    <step id="register" type="run-command">
+      <env name="SU_MARK" value="${destination}/registered"/>
+      <commands os="linux"><command><arg>/bin/sh</arg><arg>-c</arg><arg>echo yes &gt; "$SU_MARK"</arg></command></commands>
+      <commands os="macos"><command><arg>/bin/sh</arg><arg>-c</arg><arg>echo yes &gt; "$SU_MARK"</arg></command></commands>
+      <commands os="windows"><command><arg>cmd</arg><arg>/c</arg><arg>echo yes &gt; "%SU_MARK%"</arg></command></commands>
+      <rollback os="linux"><command><arg>/bin/sh</arg><arg>-c</arg><arg>rm -f "$SU_MARK"; echo unregistered &gt; "${destination}/unregistered"</arg></command></rollback>
+      <rollback os="macos"><command><arg>/bin/sh</arg><arg>-c</arg><arg>rm -f "$SU_MARK"; echo unregistered &gt; "${destination}/unregistered"</arg></command></rollback>
+      <rollback os="windows"><command><arg>cmd</arg><arg>/c</arg><arg>del "%SU_MARK%" &amp;&amp; echo unregistered &gt; "${destination}/unregistered"</arg></command></rollback>
+    </step>
+    <step id="no-reverse" type="run-command">
+      <commands os="linux"><command><arg>/bin/sh</arg><arg>-c</arg><arg>true</arg></command></commands>
+      <commands os="macos"><command><arg>/bin/sh</arg><arg>-c</arg><arg>true</arg></command></commands>
+      <commands os="windows"><command><arg>cmd</arg><arg>/c</arg><arg>exit 0</arg></command></commands>
+    </step>
+    <step id="boom" type="run-command">
+      <commands os="linux"><command><arg>/bin/sh</arg><arg>-c</arg><arg>exit 2</arg></command></commands>
+      <commands os="macos"><command><arg>/bin/sh</arg><arg>-c</arg><arg>exit 2</arg></command></commands>
+      <commands os="windows"><command><arg>cmd</arg><arg>/c</arg><arg>exit 2</arg></command></commands>
+    </step>
+  </steps>
+</installer>

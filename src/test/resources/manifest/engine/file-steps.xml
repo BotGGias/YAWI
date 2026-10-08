@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Step tests: one step of every file type against the archive fixtures. -->
+<installer schemaVersion="1">
+  <product id="fs" version="3.1" ><name>FileSteps</name></product>
+  <languages default="en"><language code="en"/></languages>
+  <wizard><page name="welcome"/><page name="components"/><page name="summary"/></wizard>
+  <destination><default os="linux">$HOME/fs</default><default os="windows">%LOCALAPPDATA%\fs</default><default os="macos">$HOME/fs</default></destination>
+  <sources>
+    <source id="zip" size="702"><provider type="bundled"><path>classpath:/archives/sample.zip</path></provider></source>
+    <source id="tgz"><provider type="bundled"><path>classpath:/archives/sample.tar.gz</path></provider></source>
+    <source id="zip-slip"><provider type="bundled"><path>classpath:/archives/zip-slip.zip</path></provider></source>
+    <source id="tar-slip"><provider type="bundled"><path>classpath:/archives/tar-slip.tar.gz</path></provider></source>
+    <source id="symlink"><provider type="bundled"><path>classpath:/archives/symlink.tar.gz</path></provider></source>
+    <source id="no-bundled"><provider type="http"><url>https://example.invalid/x.zip</url></provider></source>
+    <source id="raw-exe"><provider type="bundled"><path>classpath:/archives/tool.exe</path></provider></source>
+  </sources>
+  <components>
+    <component id="core" required="true" size="1MiB">
+      <name>Core</name>
+      <uses ref="zip"/>
+      <step ref="unzip"/>
+      <input id="port" type="int" default="8080"><label>Port</label></input>
+    </component>
+  </components>
+  <steps>
+    <step id="unzip" type="extract"><archive ref="zip"/><to>${destination}</to></step>
+    <step id="untar" type="extract"><archive ref="tgz"/><to>${destination}/tar</to></step>
+    <step id="zip-slip" type="extract"><archive ref="zip-slip"/><to>${destination}/slip</to></step>
+    <step id="tar-slip" type="extract"><archive ref="tar-slip"/><to>${destination}/slip</to></step>
+    <step id="symlink" type="extract"><archive ref="symlink"/><to>${destination}/sym</to></step>
+    <step id="no-bundled" type="extract"><archive ref="no-bundled"/><to>${destination}</to></step>
+    <step id="raw" type="extract"><archive ref="raw-exe"/><to>${destination}/raw</to></step>
+    <step id="escape" type="extract"><archive ref="zip"/><to>${destination}/../../../../../../../../escaped-su</to></step>
+    <step id="to-work-dir" type="mkdir"><to>${tempDir}/su-step-test</to></step>
+    <step id="copy-tree" type="copy"><from>${destination}/data</from><to>${destination}/copy/data</to></step>
+    <step id="copy-file" type="copy"><from>${destination}/README.txt</from><to>${destination}/copy/README.txt</to></step>
+    <step id="copy-resource" type="copy"><from>classpath:/templates/settings.ini</from><to>${destination}/copy/settings.ini</to></step>
+    <step id="copy-missing" type="copy"><from>${destination}/nope</from><to>${destination}/copy/nope</to></step>
+    <step id="template" type="template">
+      <from>classpath:/templates/settings.ini</from>
+      <to>${destination}/etc/settings.ini</to>
+      <replace key="INSTALL_DIR" value="${destination}"/>
+      <replace key="PORT" value="${input.port}"/>
+    </step>
+    <step id="template-latin1" type="template" encoding="ISO-8859-1">
+      <from>${destination}/latin1.txt</from>
+      <to>${destination}/latin1.out</to>
+      <replace key="NAME" value="Grüße"/>
+    </step>
+    <step id="template-bad-encoding" type="template" encoding="no-such-charset">
+      <from>classpath:/templates/settings.ini</from>
+      <to>${destination}/x</to>
+    </step>
+    <step id="mkdir" type="mkdir"><to>${destination}/a/b/c</to></step>
+    <step id="chmod" type="chmod" mode="750"><to>${destination}/a/script.sh</to></step>
+    <step id="chmod-missing" type="chmod" mode="755"><to>${destination}/a/nope</to></step>
+  </steps>
+</installer>

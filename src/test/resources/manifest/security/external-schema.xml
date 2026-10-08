@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The schemaLocation hint points somewhere unreachable. The installer must
+     ignore it and validate against the bundled XSD instead. -->
+<installer schemaVersion="1"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xsi:noNamespaceSchemaLocation="http://127.0.0.1:1/evil.xsd">
+  <product id="p" version="1"><name>P</name></product>
+  <languages default="en"><language code="en"/></languages>
+  <wizard><page name="welcome"/></wizard>
+  <destination><default os="linux">$HOME/p</default></destination>
+  <components>
+    <component id="core" required="true"><name>Core</name></component>
+  </components>
+</installer>

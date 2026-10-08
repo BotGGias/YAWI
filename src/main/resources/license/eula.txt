@@ -1,0 +1,14 @@
+YOUR INSTALLER - END USER LICENSE AGREEMENT (PLACEHOLDER)
+
+This is placeholder text. The real license agreement for YOUR INSTALLER
+is not available yet; replace this file (src/main/resources/license/eula.txt)
+or point wizard/license in installer.xml to the final text before release.
+
+1. The software is provided "as is", without warranty of any kind.
+2. You may install and use the software for personal, non-commercial
+   purposes.
+3. Redistribution of the software or its data files is not permitted
+   without written consent of the authors.
+
+By selecting "I accept" you confirm that you have read and understood
+this agreement.

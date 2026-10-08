@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Progress page test: a full page flow whose only run-command fails. -->
+<installer schemaVersion="1">
+  <product id="failing" version="1"><name>Failing</name></product>
+  <languages default="en"><language code="en"/><language code="de"/></languages>
+  <wizard>
+    <page name="welcome"/><page name="components"/><page name="destination"/>
+    <page name="summary"/><page name="progress"/><page name="finish"/>
+  </wizard>
+  <destination><default os="linux">$HOME/failing</default><default os="windows">%LOCALAPPDATA%\failing</default><default os="macos">$HOME/failing</default></destination>
+  <components>
+    <component id="core" required="true" size="1MiB">
+      <name>Core</name>
+      <step ref="mk"/>
+      <step ref="boom"/>
+      <step ref="never"/>
+    </component>
+  </components>
+  <steps>
+    <step id="mk" type="mkdir"><to>${destination}/made</to></step>
+    <step id="boom" type="run-command">
+      <commands os="linux"><command><arg>/bin/sh</arg><arg>-c</arg><arg>echo going wrong; exit 2</arg></command></commands>
+      <commands os="macos"><command><arg>/bin/sh</arg><arg>-c</arg><arg>echo going wrong; exit 2</arg></command></commands>
+      <commands os="windows"><command><arg>cmd</arg><arg>/c</arg><arg>echo going wrong&amp;&amp; exit 2</arg></command></commands>
+    </step>
+    <step id="never" type="mkdir"><to>${destination}/never</to></step>
+  </steps>
+  <i18n>
+    <messages lang="de"><message path="steps.boom.name">Kaputtmachen</message></messages>
+    <messages lang="en"><message path="steps.boom.name">Break things</message></messages>
+  </i18n>
+</installer>

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Source page test: shipped copy plus download with a version check; __BASE__ is replaced with the local server. -->
+<installer schemaVersion="1">
+  <product id="vc" version="1.0.0"><name>VC</name></product>
+  <languages default="en"><language code="en"/><language code="de"/></languages>
+  <wizard><page name="welcome"/><page name="components"/><page name="source"/><page name="summary"/></wizard>
+  <destination><default os="linux">$HOME/vc</default><default os="windows">%LOCALAPPDATA%\vc</default><default os="macos">$HOME/vc</default></destination>
+  <sources>
+    <source id="data" size="1MiB" sha256="0000000000000000000000000000000000000000000000000000000000000000">
+      <provider type="bundled"><path>classpath:/archives/sample.zip</path></provider>
+      <provider type="http"><url>__BASE__/ok</url></provider>
+      <provider type="torrent"><magnet>magnet:?xt=urn:btih:0000000000000000000000000000000000000000</magnet></provider>
+      <versionCheck url="__BASE__/__VERSION__"/>
+    </source>
+    <source id="only-bundled">
+      <provider type="bundled"><path>classpath:/archives/sample.tar.gz</path></provider>
+    </source>
+    <!-- E10-S01: no sha256 - the download of this one cannot be verified, and the pages say so. -->
+    <source id="unverified">
+      <provider type="bundled"><path>classpath:/archives/sample.tar.gz</path></provider>
+      <provider type="http"><url>__BASE__/ok</url></provider>
+    </source>
+  </sources>
+  <components>
+    <component id="core" required="true" size="1MiB"><name>Core</name><uses ref="data"/><uses ref="only-bundled"/><uses ref="unverified"/></component>
+  </components>
+</installer>

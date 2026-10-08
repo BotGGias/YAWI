@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.RadioButton?>
+<?import javafx.scene.control.ToggleGroup?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<!-- Maintenance page (E14-S02): shown in front of the first page when the product is already
+     registered. Texts with parameters (found, versionInfo, orphan) are bound in MaintenancePageController. -->
+<VBox spacing="12.0" xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="de.yawi.installer.ui.page.MaintenancePageController">
+   <fx:define>
+      <ToggleGroup fx:id="mode" />
+   </fx:define>
+   <children>
+      <Label fx:id="heading" styleClass="page-heading" wrapText="true" />
+      <HBox fx:id="selectBox" spacing="8.0" alignment="CENTER_LEFT">
+         <children>
+            <Label text="%maintenance.select" />
+            <ComboBox fx:id="installations" prefWidth="420.0" />
+         </children>
+      </HBox>
+      <Label fx:id="found" wrapText="true" />
+      <Label fx:id="versionInfo" styleClass="page-hint" wrapText="true" />
+      <VBox fx:id="modes" spacing="6.0">
+         <VBox.margin>
+            <Insets top="12.0" />
+         </VBox.margin>
+         <children>
+            <Label text="%maintenance.question" styleClass="section-title" />
+            <RadioButton fx:id="modeUpdate" mnemonicParsing="false" text="%maintenance.mode.update" toggleGroup="$mode" />
+            <RadioButton fx:id="modeModify" mnemonicParsing="false" text="%maintenance.mode.modify" toggleGroup="$mode" />
+            <RadioButton fx:id="modeRepair" mnemonicParsing="false" text="%maintenance.mode.repair" toggleGroup="$mode" />
+            <RadioButton fx:id="modeUninstall" mnemonicParsing="false" text="%maintenance.mode.uninstall" toggleGroup="$mode" />
+         </children>
+      </VBox>
+      <VBox fx:id="orphanBox" spacing="8.0">
+         <VBox.margin>
+            <Insets top="12.0" />
+         </VBox.margin>
+         <children>
+            <Label fx:id="orphan" styleClass="warning" wrapText="true" />
+            <HBox>
+               <children>
+                  <Button fx:id="removeEntry" mnemonicParsing="false" onAction="#removeEntry" text="%maintenance.orphan.remove" />
+               </children>
+            </HBox>
+         </children>
+      </VBox>
+      <Label fx:id="status" styleClass="page-hint" wrapText="true" />
+   </children>
+</VBox>

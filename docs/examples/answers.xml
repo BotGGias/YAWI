@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Antwortdatei fuer den Silent-Modus (E15-S02), passend zum mitgelieferten
+  installer.xml. Uebergabe mit der Option "config=<datei>" zusammen mit
+  "silent" (jeweils mit doppeltem Bindestrich, den ein XML-Kommentar nicht
+  enthalten darf; Beispielaufruf in README.md, Abschnitt Silent-Modus).
+
+  Jedes Element ist optional. Rangfolge: Kommandozeile > diese Datei >
+  Vorgabe aus dem Manifest. Was in der Datei steht, muss vollstaendig sein:
+  ein <input> ohne value ist ein Fehler, nie ein geratener Standardwert.
+  Ohne <license accepted="true"/> (oder die Option accept-license) lehnt
+  der Installer ein Manifest mit Lizenz ab. Schema: installer-answers-1.xsd
+  im Installer (src/main/resources).
+-->
+<answers version="1" product="your-product">
+
+  <!-- Sprachcode wie in <languages> des Manifests. -->
+  <language>de</language>
+
+  <!-- Zielverzeichnis; allUsers="true" waehlt bei leerem Text den systemweiten
+       Vorgabeordner und legt Menueeintraege fuer alle Benutzer an. -->
+  <destination allUsers="false">/opt/your-product</destination>
+
+  <!-- Komponenten-Ids aus dem Manifest; Abhaengigkeiten und required-Komponenten
+       kommen automatisch dazu. Fehlt der Block, gilt die typische Auswahl. -->
+  <components>
+    <component id="core"/>
+    <component id="server"/>
+  </components>
+
+  <!-- Bezugsart je Quelle: bundled (mitgeliefert), http oder torrent. Die
+       Quelle muss den Provider im Manifest anbieten. Fehlt der Block, gilt
+       bundled, sonst http, sonst torrent. -->
+  <sources>
+    <source id="game-data" kind="bundled"/>
+  </sources>
+
+  <!-- Werte der Komponenteneingaben (nur gewaehlte Komponenten zaehlen). -->
+  <inputs>
+    <input id="serverPort" value="50000"/>
+  </inputs>
+
+  <license accepted="true"/>
+</answers>

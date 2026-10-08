@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Engine tests: no weights (spread evenly), a run-command with Linux commands only. -->
+<installer schemaVersion="1">
+  <product id="eng" version="1"><name>Eng</name></product>
+  <languages default="en"><language code="en"/></languages>
+  <wizard><page name="welcome"/><page name="components"/><page name="summary"/></wizard>
+  <destination><default os="linux">$HOME/eng</default><default os="windows">%LOCALAPPDATA%\eng</default><default os="macos">$HOME/eng</default></destination>
+  <components>
+    <component id="core" required="true" size="1MiB">
+      <name>Core</name>
+      <step ref="make-dir"/>
+      <step ref="say-hello"/>
+    </component>
+  </components>
+  <steps>
+    <step id="make-dir" type="copy">
+      <from>${destination}/a</from>
+      <to>${destination}/b</to>
+    </step>
+    <step id="say-hello" type="run-command">
+      <commands os="linux">
+        <command><arg>echo</arg><arg>hello from ${destination}</arg></command>
+      </commands>
+    </step>
+  </steps>
+</installer>

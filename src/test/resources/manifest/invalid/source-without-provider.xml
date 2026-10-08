@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<installer schemaVersion="1">
+  <product id="p" version="1"><name>P</name></product>
+  <languages default="en"><language code="en"/></languages>
+  <wizard><page name="welcome"/></wizard>
+  <destination><default os="linux">$HOME/p</default></destination>
+  <sources>
+    <source id="data" size="1MiB"/>
+  </sources>
+  <components>
+    <component id="core" required="true"><name>Core</name><uses ref="data"/></component>
+  </components>
+</installer>

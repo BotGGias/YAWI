@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.layout.VBox?>
+
+<!-- License page content; the text is loaded from wizard/license on entry. -->
+<VBox spacing="10.0" xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="de.yawi.installer.ui.page.LicensePageController">
+   <children>
+      <Label fx:id="hint" text="%license.hint" wrapText="true" />
+      <TextArea fx:id="licenseText" editable="false" wrapText="true" VBox.vgrow="ALWAYS" />
+      <CheckBox fx:id="accept" mnemonicParsing="false" text="%license.accept" />
+   </children>
+</VBox>

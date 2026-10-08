@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE installer [
+  <!ENTITY xxe SYSTEM "file:///etc/passwd">
+]>
+<installer schemaVersion="1">
+  <product id="p" version="1"><name>&xxe;</name></product>
+</installer>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- A mirror over plain http: valid, but the validator warns (E07-S02). -->
+<installer schemaVersion="1">
+  <product id="ph" version="1"><name>PH</name></product>
+  <languages default="en"><language code="en"/></languages>
+  <wizard><page name="welcome"/><page name="components"/><page name="summary"/></wizard>
+  <destination><default os="linux">$HOME/ph</default><default os="windows">%LOCALAPPDATA%\ph</default><default os="macos">$HOME/ph</default></destination>
+  <sources>
+    <source id="data" sha256="0000000000000000000000000000000000000000000000000000000000000000">
+      <provider type="http"><url>https://example.invalid/data.zip</url><url>http://mirror.invalid/data.zip</url></provider>
+    </source>
+  </sources>
+  <components>
+    <component id="core" required="true" size="1MiB"><name>Core</name><uses ref="data"/></component>
+  </components>
+</installer>

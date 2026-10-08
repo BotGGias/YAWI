@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<installer schemaVersion="1"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xsi:noNamespaceSchemaLocation="installer-manifest-1.xsd">
+
+    <product id="your-product-id" version="2.4.1">
+        <name>Your Product Name</name>
+        <vendor>Your Vendor Name</vendor>
+        <homepage>https://example.invalid</homepage>
+        <icon>classpath:/img/icon.png</icon>
+    </product>
+
+    <!-- ====== Sprachen ============================================= -->
+    <!-- default = Rueckfall, wenn die Systemsprache nicht verfuegbar ist.
+         Uebersetzungen fuer Manifest-Texte stehen unten unter <i18n>.
+         Die UI-Texte des Frameworks selbst liegen in ResourceBundles. -->
+    <languages default="en">
+        <language code="de"/>
+        <language code="en"/>
+        <language code="fr"/>
+        <language code="pl"/>
+        <language code="ru"/>
+        <language code="zh"/>
+        <language code="ja"/>
+        <language code="es"/>
+    </languages>
+
+    <!-- ====== Wizard-Seiten (E04) ======================================== -->
+    <!-- Reihenfolge der <page>-Elemente = Seitenfluss.
+         Die Lizenzseite entfaellt, wenn <license> fehlt. -->
+    <wizard width="820" height="540">
+        <page name="welcome"/>
+        <page name="license"/>
+        <page name="components"/>
+        <page name="destination"/>
+        <page name="source"/>
+        <page name="summary"/>
+        <page name="progress"/>
+        <page name="finish"/>
+        <license>classpath:/license/eula.txt</license>
+    </wizard>
+
+    <!-- ====== Standard-Installationsorte (E02/E06) ======================= -->
+    <destination allowUserChange="true" minFreeBytes="2GiB">
+        <!-- Platzhalter werden von der Platform-Abstraktion aufgeloest. -->
+        <default os="windows">%LOCALAPPDATA%\YOURFOLDER</default>
+        <default os="linux">$HOME/.local/share/your-product</default>
+        <default os="macos">$HOME/Applications/YOURFOLDER</default>
+        <!-- systemWide wird nur genutzt, wenn der Nutzer es waehlt. -->
+        <systemWide os="windows">%ProgramFiles%\YOURFOLDER</systemWide>
+        <systemWide os="linux">/opt/your-product</systemWide>
+        <systemWide os="macos">/Applications/YOURFOLDER</systemWide>
+    </destination>
+
+    <!-- ====== Datasources ================================= -->
+    <sources>
+        <source id="base-data" size="700MiB"
+                sha256="0000000000000000000000000000000000000000000000000000000000000000">
+            <provider type="bundled">
+                <path>classpath:/payload/base-data.zip</path>
+            </provider>
+
+            <provider type="http">
+                <!-- more <url>-Elements -->
+                <url>https://example.invalid/dl/base-data-2.4.1.zip</url>
+                <url>https://mirror.example.invalid/base-data-2.4.1.zip</url>
+            </provider>
+
+            <provider type="torrent" port="6899" peerTimeout="2m" fallback="ask" lsd="false">
+                <magnet>magnet:?xt=urn:btih:0000000000000000000000000000000000000000</magnet>
+                <!-- alternativ: <torrentFile>classpath:/payload/base-data.torrent</torrentFile> -->
+            </provider>
+
+            <!-- checks the version
+                 product/@version, if newer the installer offers the download. -->
+            <versionCheck url="https://example.invalid/dl/latest.json"/>
+        </source>
+    </sources>
+
+    <!-- ====== Komponenten ========================================== -->
+    <components>
+        <component id="core" required="true" selectedByDefault="true" size="700MiB">
+            <name>Core-Dateien</name>
+            <description>Basisdaten, ohne die nichts laeuft.</description>
+            <uses ref="base-data"/>
+            <step ref="unpack-core"/>
+            <step ref="configure-core"/>
+        </component>
+
+        <component id="server" required="false" selectedByDefault="false" size="50MiB">
+            <name>Dedicated Server</name>
+            <description>Server-Komponente zum Hosten eigener Partien.</description>
+            <dependsOn ref="core"/>
+            <uses ref="base-data"/>
+            <step ref="install-server"/>
+            <step ref="register-service"/>
+
+            <!-- Freely definable input fields-->
+            <input id="autostart" type="bool" default="true">
+                <label>Start the app at boot</label>
+            </input>
+            <!-- type="choice": <option> elements, @required blocks Next on empty -->
+            <input id="mode" type="choice" default="lan" required="true">
+                <label>Mode</label>
+                <option value="lan">LAN only</option>
+                <option value="internet">Internet</option>
+            </input>
+        </component>
+    </components>
+
+    <presets>
+        <preset id="typical">
+            <component ref="core"/>
+        </preset>
+        <preset id="full">
+            <component ref="core"/>
+            <component ref="server"/>
+        </preset>
+    </presets>
+
+    <!-- ====== Steps ============================================= -->
+    <!-- @weight = amount of progress. -->
+    <steps>
+
+        <step id="unpack-core" type="extract" weight="60">
+            <archive ref="base-data"/>
+            <to>${destination}</to>
+        </step>
+
+        <step id="configure-core" type="template" weight="2">
+            <from>classpath:/templates/settings.ini</from>
+            <to>${destination}/settings.ini</to>
+            <replace key="INSTALL_DIR" value="${destination}"/>
+            <replace key="AUTOSTART" value="${input.autostart}"/>
+        </step>
+
+        <step id="install-server" type="copy" weight="5">
+            <from>${destination}/server</from>
+            <to>${destination}/bin</to>
+        </step>
+
+        <!-- Depending on OS different commands are issued-->
+        <step id="register-service" type="run-command" weight="10"
+              expectExitCode="0" timeoutSeconds="120"
+              onFailure="abort"
+              elevated="false">
+
+            <workingDir>${destination}</workingDir>
+            <env name="SU_HOME" value="${destination}"/>
+
+            <commands os="linux">
+                <command>
+                    <arg>chmod</arg>
+                    <arg>+x</arg>
+                    <arg>${destination}/bin/su-server</arg>
+                </command>
+                <command>
+                    <arg>systemctl</arg>
+                    <arg>--user</arg>
+                    <arg>enable</arg>
+                    <arg>--now</arg>
+                    <arg>su-server.service</arg>
+                </command>
+            </commands>
+
+            <commands os="windows">
+                <command>
+                    <arg>cmd</arg>
+                    <arg>/c</arg>
+                    <arg>${destination}\bin\register.bat</arg>
+                </command>
+            </commands>
+
+            <commands os="macos">
+                <command>
+                    <arg>/bin/sh</arg>
+                    <arg>-c</arg>
+                    <arg>launchctl load ${destination}/bin/su-server.plist</arg>
+                </command>
+            </commands>
+
+            <!-- rollback options-->
+            <rollback os="linux">
+                <command>
+                    <arg>systemctl</arg>
+                    <arg>--user</arg>
+                    <arg>disable</arg>
+                    <arg>--now</arg>
+                    <arg>su-server.service</arg>
+                </command>
+            </rollback>
+        </step>
+    </steps>
+
+    <!-- ====== Systemintegration ==================================== -->
+    <integration>
+        <shortcut id="main-shortcut" desktop="true" menu="true">
+            <name>YOUR INSTALLER</name>
+            <target>${destination}/server/su-server</target>
+            <icon>classpath:/img/icon.png</icon>
+        </shortcut>
+        <pathEntry>${destination}/bin</pathEntry>
+        <fileAssociation extension=".sumap" target="${destination}/bin/su">
+            <description>YOUR INSTALLER Map</description>
+        </fileAssociation>
+    </integration>
+
+    <!-- ====== Uebersetzung von Manifest-Texten ===================== -->
+    <!-- @path adressiert den zu ersetzenden Text. Fehlt eine Uebersetzung,
+         gilt der oben direkt angegebene Text. -->
+    <i18n>
+        <messages lang="de">
+            <message path="components.server.name">Dedizierter Server</message>
+            <message path="components.server.description"
+            >Server-Komponente zum Hosten eigener Partien.</message>
+        </messages>
+        <messages lang="en">
+            <message path="components.server.name">Dedicated Server</message>
+            <message path="components.server.description"
+            >Server component for hosting your own games.</message>
+        </messages>
+    </i18n>
+
+</installer>

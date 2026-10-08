@@ -1,0 +1,639 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>de.yawi</groupId>
+    <artifactId>yawi-installer</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <name>YAWI</name>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.compiler.release>21</maven.compiler.release>
+        <junit.version>5.9.2</junit.version>
+        <javafx.version>17.0.6</javafx.version>
+        <guice.version>6.0.0</guice.version>
+        <!-- Signaturpflicht fuer Manifeste aus dem Netz. Wird in
+             de/yawi/installer/integrity/signature.properties eingefiltert und ist
+             damit im Artefakt fixiert. Entwicklung: -Dyawi.signature.policy=lenient;
+             E16 lehnt einen Freigabe-Build mit 'lenient' ab. -->
+        <yawi.signature.policy>strict</yawi.signature.policy>
+        <!-- Argumente fuer exec:java@sign-manifest, z. B.
+             -Dyawi.sign.args="sign dist/installer.xml tools/keys/dev/manifest-signing.key.pem" -->
+        <yawi.sign.args>--help</yawi.sign.args>
+
+        <!-- E16-S02: Produktangaben fuer jpackage an einer Stelle. yawi.app.version
+             (Version ohne -SNAPSHOT, jpackage verlangt x.y.z) leitet
+             build-helper:regex-property aus project.version ab. -->
+        <yawi.app.name>yawi-installer</yawi.app.name>
+        <yawi.app.displayName>YAWI</yawi.app.displayName>
+        <yawi.app.vendor>your-installer</yawi.app.vendor>
+        <yawi.app.copyright>Copyright 2025-2026 your-installer</yawi.app.copyright>
+        <yawi.app.description>Setup wizard for your-installer</yawi.app.description>
+        <yawi.app.mainClass>de.yawi.installer.Main</yawi.app.mainClass>
+        <!-- JDK-Module des jlink-Laufzeitimages (jdeps ueber target/classes und alle
+             Abhaengigkeiten, plus java.naming (logback-classic verlinkt den JNDI-Handler beim
+             Start), jdk.crypto.ec fuer TLS auf JDK 21 und jdk.localedata
+             fuer die uebersetzten Locales). Bewusst ohne javafx.*: JavaFX kommt als
+             Maven-Jar auf den Klassenpfad, auch wenn das bauende JDK (Zulu FX) eigene
+             javafx-jmods haette - sonst baut ein normales JDK in CI etwas anderes. -->
+        <yawi.jlink.modules>java.base,java.desktop,java.logging,java.naming,java.net.http,java.scripting,java.xml,jdk.unsupported,jdk.crypto.ec,jdk.localedata</yawi.jlink.modules>
+        <yawi.jpackage.dir>${project.build.directory}/jpackage</yawi.jpackage.dir>
+        <yawi.dist.dir>${project.build.directory}/dist</yawi.dist.dir>
+        <!-- Optional: -Dyawi.dist.manifest=<datei> legt Manifest (+ .sig) neben den Entry ins Archiv. -->
+        <yawi.dist.manifest></yawi.dist.manifest>
+        <!-- Plattformspezifische jpackage-Zusatzargumente; die os-*-Profile ueberschreiben. -->
+        <yawi.jpackage.extra></yawi.jpackage.extra>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-controls</artifactId>
+            <version>${javafx.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-fxml</artifactId>
+            <version>${javafx.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>2.0.12</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>33.0.0-jre</version>
+        </dependency>
+
+        <!-- used by bt: bt/bencoding/model/YamlBEObjectModelLoader -->
+        <dependency>
+            <groupId>org.yaml</groupId>
+            <artifactId>snakeyaml</artifactId>
+            <version>2.2</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.google.inject</groupId>
+            <artifactId>guice</artifactId>
+            <version>${guice.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>1.4.14</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>de/yawi/installer/integrity/signature.properties</include>
+                    <include>de/yawi/installer/build.properties</include>
+                </includes>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>false</filtering>
+                <excludes>
+                    <exclude>de/yawi/installer/integrity/signature.properties</exclude>
+                    <exclude>de/yawi/installer/build.properties</exclude>
+                </excludes>
+            </resource>
+            <resource>
+                <directory>${project.basedir}</directory>
+                <filtering>false</filtering>
+                <targetPath>META-INF</targetPath>
+                <includes>
+                    <include>LICENSE</include>
+                    <include>NOTICE</include>
+                </includes>
+            </resource>
+        </resources>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.13.0</version>
+                <configuration>
+                    <release>${maven.compiler.release}</release>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>default-testCompile</id>
+                        <configuration>
+                            <useModulePath>false</useModulePath>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.2.5</version>
+                <configuration>
+                    <useModulePath>false</useModulePath>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>io.github.git-commit-id</groupId>
+                <artifactId>git-commit-id-maven-plugin</artifactId>
+                <version>9.0.1</version>
+                <executions>
+                    <execution>
+                        <id>git-info</id>
+                        <phase>initialize</phase>
+                        <goals><goal>revision</goal></goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <failOnNoGitDirectory>false</failOnNoGitDirectory>
+                    <failOnUnableToExtractRepoInfo>false</failOnUnableToExtractRepoInfo>
+                    <generateGitPropertiesFile>false</generateGitPropertiesFile>
+                    <includeOnlyProperties>
+                        <includeOnlyProperty>^git\.commit\.id\.abbrev$</includeOnlyProperty>
+                        <includeOnlyProperty>^git\.build\.time$</includeOnlyProperty>
+                    </includeOnlyProperties>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.4.1</version>
+                <configuration>
+                    <archive>
+                        <manifestEntries>
+                            <Implementation-Version>${project.version}</Implementation-Version>
+                            <Build-Commit>${git.commit.id.abbrev}</Build-Commit>
+                            <Build-Time>${git.build.time}</Build-Time>
+                        </manifestEntries>
+                    </archive>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.2.0</version>
+                <executions>
+                    <execution>
+                        <id>sign-manifest</id>
+                        <configuration>
+                            <mainClass>de.yawi.installer.core.integrity.ManifestSigner</mainClass>
+                            <commandlineArgs>${yawi.sign.args}</commandlineArgs>
+                            <classpathScope>compile</classpathScope>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.openjfx</groupId>
+                <artifactId>javafx-maven-plugin</artifactId>
+                <version>0.0.8</version>
+                <executions>
+                    <execution>
+                        <!-- Default configuration for running with: mvn clean javafx:run -->
+                        <id>default-cli</id>
+                        <configuration>
+                            <mainClass>de.yawi.installer/de.yawi.installer.Main</mainClass>
+                            <launcher>app</launcher>
+                            <jlinkZipName>app</jlinkZipName>
+                            <jlinkImageName>app</jlinkImageName>
+                            <noManPages>true</noManPages>
+                            <stripDebug>true</stripDebug>
+                            <noHeaderFiles>true</noHeaderFiles>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+    <profiles>
+        <profile>
+            <id>os-linux</id>
+            <activation><os><name>Linux</name></os></activation>
+            <properties>
+                <yawi.dist.os>linux</yawi.dist.os>
+                <yawi.dist.format>tar.gz</yawi.dist.format>
+                <yawi.dist.icon>${project.basedir}/src/main/deploy/icons/yawi-installer.png</yawi.dist.icon>
+                <yawi.dist.packDir>${yawi.app.name}</yawi.dist.packDir>
+                <yawi.dist.packItem>.</yawi.dist.packItem>
+                <yawi.dist.entryDir>${yawi.app.name}/bin</yawi.dist.entryDir>
+                <yawi.tar.create>-czf</yawi.tar.create>
+            </properties>
+        </profile>
+        <profile>
+            <id>os-windows</id>
+            <activation><os><family>windows</family></os></activation>
+            <properties>
+                <yawi.dist.os>windows</yawi.dist.os>
+                <yawi.dist.format>zip</yawi.dist.format>
+                <yawi.dist.icon>${project.basedir}/src/main/deploy/icons/yawi-installer.ico</yawi.dist.icon>
+                <yawi.dist.packDir>${yawi.app.name}</yawi.dist.packDir>
+                <yawi.dist.packItem>.</yawi.dist.packItem>
+                <yawi.dist.entryDir>${yawi.app.name}</yawi.dist.entryDir>
+                <yawi.tar.create>-a -cf</yawi.tar.create>
+            </properties>
+        </profile>
+        <profile>
+            <id>os-macos</id>
+            <activation><os><family>mac</family></os></activation>
+            <properties>
+                <yawi.dist.os>macos</yawi.dist.os>
+                <yawi.dist.format>tar.gz</yawi.dist.format>
+                <yawi.dist.icon>${project.basedir}/src/main/deploy/icons/yawi-installer.icns</yawi.dist.icon>
+                <yawi.dist.packDir>.</yawi.dist.packDir>
+                <yawi.dist.packItem>${yawi.app.name}.app</yawi.dist.packItem>
+                <yawi.dist.entryDir>${yawi.app.name}.app/Contents/MacOS</yawi.dist.entryDir>
+                <yawi.tar.create>-czf</yawi.tar.create>
+                <yawi.jpackage.extra>--mac-package-name "${yawi.app.displayName}" --mac-package-identifier de.yawi.installer</yawi.jpackage.extra>
+            </properties>
+        </profile>
+        <profile>
+            <id>arch-x86_64</id>
+            <activation><os><arch>amd64</arch></os></activation>
+            <properties><yawi.dist.arch>x86_64</yawi.dist.arch></properties>
+        </profile>
+        <profile>
+            <id>arch-x86_64-mac</id>
+            <activation><os><arch>x86_64</arch></os></activation>
+            <properties><yawi.dist.arch>x86_64</yawi.dist.arch></properties>
+        </profile>
+        <profile>
+            <id>arch-arm64</id>
+            <activation><os><arch>aarch64</arch></os></activation>
+            <properties><yawi.dist.arch>arm64</yawi.dist.arch></properties>
+        </profile>
+
+        <profile>
+            <id>release</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <version>3.1.0</version>
+                        <executions>
+                            <execution>
+                                <id>release-guard</id>
+                                <phase>validate</phase>
+                                <goals><goal>run</goal></goals>
+                                <configuration>
+                                    <target>
+                                        <fail message="release build requires yawi.signature.policy=strict (was: ${yawi.signature.policy})">
+                                            <condition><not><equals arg1="${yawi.signature.policy}" arg2="strict"/></not></condition>
+                                        </fail>
+                                        <fail message="release build must not embed the development signing key from tools/keys/dev/ - drop in the release public key">
+                                            <condition>
+                                                <and>
+                                                    <available file="${project.basedir}/tools/keys/dev/manifest-signing.pub.pem" type="file"/>
+                                                    <filesmatch file1="${project.basedir}/tools/keys/dev/manifest-signing.pub.pem"
+                                                                file2="${project.basedir}/src/main/resources/de/yawi/installer/integrity/manifest-signing.pub.pem"/>
+                                                </and>
+                                            </condition>
+                                        </fail>
+                                        <echo message="release guard passed: policy=strict, release signing key embedded"/>
+                                    </target>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>release-checksums</id>
+                                <phase>verify</phase>
+                                <goals><goal>run</goal></goals>
+                                <configuration>
+                                    <target>
+                                        <!-- SHA-256 je Artefakt in target/dist/ (<datei>.sha256). -->
+                                        <checksum algorithm="SHA-256" fileext=".sha256">
+                                            <fileset dir="${yawi.dist.dir}" erroronmissingdir="false">
+                                                <include name="*.tar.gz"/>
+                                                <include name="*.zip"/>
+                                            </fileset>
+                                        </checksum>
+                                        <echo message="checksums written next to the artifacts in ${yawi.dist.dir}"/>
+                                    </target>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- "mvnw -Plicenses generate-resources" schreibt docs/THIRD-PARTY.txt
+             (versionierte Liste aller transitiven Abhaengigkeiten und ihrer Lizenzen).
+             Opt-in-Profil, damit der normale Build es nicht bei jedem Lauf neu erzeugt. -->
+        <profile>
+            <id>licenses</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>license-maven-plugin</artifactId>
+                        <version>2.4.0</version>
+                        <executions>
+                            <execution>
+                                <id>third-party</id>
+                                <phase>generate-resources</phase>
+                                <goals><goal>add-third-party</goal></goals>
+                                <configuration>
+                                    <outputDirectory>${project.basedir}/docs</outputDirectory>
+                                    <thirdPartyFilename>THIRD-PARTY.txt</thirdPartyFilename>
+                                    <excludedScopes>test</excludedScopes>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- "mvnw -Pfatjar package" builds target/yawi-installer-<v>-all.jar
+            -->
+        <profile>
+            <id>fatjar</id>
+            <dependencies>
+                <dependency><groupId>org.openjfx</groupId><artifactId>javafx-base</artifactId><version>${javafx.version}</version><classifier>linux</classifier></dependency>
+                <dependency><groupId>org.openjfx</groupId><artifactId>javafx-graphics</artifactId><version>${javafx.version}</version><classifier>linux</classifier></dependency>
+                <dependency><groupId>org.openjfx</groupId><artifactId>javafx-controls</artifactId><version>${javafx.version}</version><classifier>linux</classifier></dependency>
+                <dependency><groupId>org.openjfx</groupId><artifactId>javafx-fxml</artifactId><version>${javafx.version}</version><classifier>linux</classifier></dependency>
+
+                <dependency><groupId>org.openjfx</groupId><artifactId>javafx-base</artifactId><version>${javafx.version}</version><classifier>linux-aarch64</classifier></dependency>
+                <dependency><groupId>org.openjfx</groupId><artifactId>javafx-graphics</artifactId><version>${javafx.version}</version><classifier>linux-aarch64</classifier></dependency>
+                <dependency><groupId>org.openjfx</groupId><artifactId>javafx-controls</artifactId><version>${javafx.version}</version><classifier>linux-aarch64</classifier></dependency>
+                <dependency><groupId>org.openjfx</groupId><artifactId>javafx-fxml</artifactId><version>${javafx.version}</version><classifier>linux-aarch64</classifier></dependency>
+
+                <dependency><groupId>org.openjfx</groupId><artifactId>javafx-base</artifactId><version>${javafx.version}</version><classifier>win</classifier></dependency>
+                <dependency><groupId>org.openjfx</groupId><artifactId>javafx-graphics</artifactId><version>${javafx.version}</version><classifier>win</classifier></dependency>
+                <dependency><groupId>org.openjfx</groupId><artifactId>javafx-controls</artifactId><version>${javafx.version}</version><classifier>win</classifier></dependency>
+                <dependency><groupId>org.openjfx</groupId><artifactId>javafx-fxml</artifactId><version>${javafx.version}</version><classifier>win</classifier></dependency>
+
+                <dependency><groupId>org.openjfx</groupId><artifactId>javafx-base</artifactId><version>${javafx.version}</version><classifier>mac</classifier></dependency>
+                <dependency><groupId>org.openjfx</groupId><artifactId>javafx-graphics</artifactId><version>${javafx.version}</version><classifier>mac</classifier></dependency>
+                <dependency><groupId>org.openjfx</groupId><artifactId>javafx-controls</artifactId><version>${javafx.version}</version><classifier>mac</classifier></dependency>
+                <dependency><groupId>org.openjfx</groupId><artifactId>javafx-fxml</artifactId><version>${javafx.version}</version><classifier>mac</classifier></dependency>
+
+                <dependency><groupId>org.openjfx</groupId><artifactId>javafx-base</artifactId><version>${javafx.version}</version><classifier>mac-aarch64</classifier></dependency>
+                <dependency><groupId>org.openjfx</groupId><artifactId>javafx-graphics</artifactId><version>${javafx.version}</version><classifier>mac-aarch64</classifier></dependency>
+                <dependency><groupId>org.openjfx</groupId><artifactId>javafx-controls</artifactId><version>${javafx.version}</version><classifier>mac-aarch64</classifier></dependency>
+                <dependency><groupId>org.openjfx</groupId><artifactId>javafx-fxml</artifactId><version>${javafx.version}</version><classifier>mac-aarch64</classifier></dependency>
+            </dependencies>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-shade-plugin</artifactId>
+                        <version>3.5.3</version>
+                        <executions>
+                            <execution>
+                                <phase>package</phase>
+                                <goals><goal>shade</goal></goals>
+                                <configuration>
+                                    <shadedArtifactAttached>true</shadedArtifactAttached>
+                                    <shadedClassifierName>all</shadedClassifierName>
+                                    <createDependencyReducedPom>false</createDependencyReducedPom>
+                                    <filters>
+                                        <filter>
+                                            <artifact>*:*</artifact>
+                                            <excludes>
+                                                <exclude>module-info.class</exclude>
+                                                <exclude>META-INF/versions/*/module-info.class</exclude>
+                                                <exclude>META-INF/*.SF</exclude>
+                                                <exclude>META-INF/*.DSA</exclude>
+                                                <exclude>META-INF/*.RSA</exclude>
+                                            </excludes>
+                                        </filter>
+                                    </filters>
+                                    <transformers>
+                                        <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                                        <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                            <mainClass>${yawi.app.mainClass}</mainClass>
+                                            <manifestEntries>
+                                                <Implementation-Version>${project.version}</Implementation-Version>
+                                                <Build-Commit>${git.commit.id.abbrev}</Build-Commit>
+                                                <Build-Time>${git.build.time}</Build-Time>
+                                            </manifestEntries>
+                                        </transformer>
+                                    </transformers>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!--./mvnw -Pdist package  ->  target/dist/yawi-installer-<v>-<os>-<arch>.{tar.gz|zip}-->
+        <profile>
+            <id>dist</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>build-helper-maven-plugin</artifactId>
+                        <version>3.5.0</version>
+                        <executions>
+                            <execution>
+                                <id>app-version</id>
+                                <phase>initialize</phase>
+                                <goals><goal>regex-property</goal></goals>
+                                <configuration>
+                                    <name>yawi.app.version</name>
+                                    <value>${project.version}</value>
+                                    <regex>-SNAPSHOT$</regex>
+                                    <replacement></replacement>
+                                    <failIfNoMatch>false</failIfNoMatch>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-dependency-plugin</artifactId>
+                        <version>3.6.1</version>
+                        <executions>
+                            <execution>
+                                <id>dist-input</id>
+                                <phase>package</phase>
+                                <goals><goal>copy-dependencies</goal></goals>
+                                <configuration>
+                                    <includeScope>runtime</includeScope>
+                                    <outputDirectory>${yawi.jpackage.dir}/input</outputDirectory>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <version>3.1.0</version>
+                        <executions>
+                            <execution>
+                                <id>dist</id>
+                                <phase>package</phase>
+                                <goals><goal>run</goal></goals>
+                                <configuration>
+                                    <target>
+                                        <property name="dist.image" value="${yawi.jpackage.dir}/image"/>
+                                        <property name="dist.name" value="${yawi.app.name}-${project.version}-${yawi.dist.os}-${yawi.dist.arch}.${yawi.dist.format}"/>
+
+                                        <delete dir="${yawi.jpackage.dir}/runtime" quiet="true"/>
+                                        <delete dir="${dist.image}" quiet="true"/>
+                                        <mkdir dir="${yawi.dist.dir}"/>
+                                        <copy file="${project.build.directory}/${project.build.finalName}.jar"
+                                              todir="${yawi.jpackage.dir}/input"/>
+
+                                        <echo message="jlink: ${yawi.jlink.modules}"/>
+                                        <exec executable="${java.home}/bin/jlink" failonerror="true">
+                                            <arg value="--add-modules"/>
+                                            <arg value="${yawi.jlink.modules}"/>
+                                            <arg value="--strip-debug"/>
+                                            <arg value="--no-header-files"/>
+                                            <arg value="--no-man-pages"/>
+                                            <arg value="--strip-native-commands"/>
+                                            <arg value="--compress"/>
+                                            <arg value="zip-6"/>
+                                            <arg value="--output"/>
+                                            <arg value="${yawi.jpackage.dir}/runtime"/>
+                                        </exec>
+
+                                        <echo message="jpackage: app-image ${yawi.app.name} ${yawi.app.version} (${yawi.dist.os}-${yawi.dist.arch})"/>
+                                        <exec executable="${java.home}/bin/jpackage" failonerror="true">
+                                            <arg value="--type"/>
+                                            <arg value="app-image"/>
+                                            <arg value="--name"/>
+                                            <arg value="${yawi.app.name}"/>
+                                            <arg value="--app-version"/>
+                                            <arg value="${yawi.app.version}"/>
+                                            <arg value="--vendor"/>
+                                            <arg value="${yawi.app.vendor}"/>
+                                            <arg value="--copyright"/>
+                                            <arg value="${yawi.app.copyright}"/>
+                                            <arg value="--description"/>
+                                            <arg value="${yawi.app.description}"/>
+                                            <arg value="--icon"/>
+                                            <arg value="${yawi.dist.icon}"/>
+                                            <arg value="--input"/>
+                                            <arg value="${yawi.jpackage.dir}/input"/>
+                                            <arg value="--main-jar"/>
+                                            <arg value="${project.build.finalName}.jar"/>
+                                            <arg value="--main-class"/>
+                                            <arg value="${yawi.app.mainClass}"/>
+                                            <arg value="--runtime-image"/>
+                                            <arg value="${yawi.jpackage.dir}/runtime"/>
+                                            <arg value="--dest"/>
+                                            <arg value="${dist.image}"/>
+                                            <arg line="${yawi.jpackage.extra}"/>
+                                        </exec>
+
+                                        <!-- Optional: -Dyawi.dist.manifest=<datei> -> installer.xml (+ .sig) neben den Entry. -->
+                                        <fail message="yawi.dist.manifest not found: ${yawi.dist.manifest}">
+                                            <condition>
+                                                <and>
+                                                    <not><equals arg1="${yawi.dist.manifest}" arg2=""/></not>
+                                                    <not><available file="${yawi.dist.manifest}" type="file"/></not>
+                                                </and>
+                                            </condition>
+                                        </fail>
+                                        <condition property="dist.manifest" value="${yawi.dist.manifest}" else="${yawi.jpackage.dir}/no-manifest">
+                                            <not><equals arg1="${yawi.dist.manifest}" arg2=""/></not>
+                                        </condition>
+                                        <copy file="${dist.manifest}" tofile="${dist.image}/${yawi.dist.entryDir}/installer.xml"
+                                              failonerror="false" quiet="true"/>
+                                        <copy file="${dist.manifest}.sig" tofile="${dist.image}/${yawi.dist.entryDir}/installer.xml.sig"
+                                              failonerror="false" quiet="true"/>
+
+                                        <echo message="archive: ${yawi.dist.dir}/${dist.name}"/>
+                                        <exec executable="tar" failonerror="true">
+                                            <arg value="-C"/>
+                                            <arg value="${dist.image}/${yawi.dist.packDir}"/>
+                                            <arg line="${yawi.tar.create}"/>
+                                            <arg value="${yawi.dist.dir}/${dist.name}"/>
+                                            <arg value="${yawi.dist.packItem}"/>
+                                        </exec>
+                                    </target>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- AppImage: "mvnw -Pdist,appimage package" (only Linux).  needs appimagetool
+             (https://github.com/AppImage/AppImageKit/releases) on the path or
+             -Dyawi.appimagetool=/pfad/zu/appimagetool. -->
+        <profile>
+            <id>appimage</id>
+            <properties>
+                <yawi.appimagetool>appimagetool</yawi.appimagetool>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <version>3.1.0</version>
+                        <executions>
+                            <execution>
+                                <id>appimage</id>
+                                <phase>verify</phase>
+                                <goals><goal>run</goal></goals>
+                                <configuration>
+                                    <target>
+                                        <property name="appdir" value="${yawi.jpackage.dir}/AppDir"/>
+
+                                        <delete dir="${appdir}" quiet="true"/>
+                                        <mkdir dir="${yawi.dist.dir}"/>
+                                        <copy todir="${appdir}">
+                                            <fileset dir="${yawi.jpackage.dir}/image/${yawi.app.name}"/>
+                                        </copy>
+                                        <chmod file="${appdir}/bin/${yawi.app.name}" perm="755"/>
+
+                                        <echo file="${appdir}/AppRun"><![CDATA[#!/bin/sh
+HERE="$(dirname "$(readlink -f "$0")")"
+exec "$HERE/bin/]]>${yawi.app.name}<![CDATA[" "$@"
+]]></echo>
+                                        <chmod file="${appdir}/AppRun" perm="755"/>
+
+                                        <copy file="${project.basedir}/src/main/deploy/linux/yawi-installer.desktop"
+                                              tofile="${appdir}/${yawi.app.name}.desktop"/>
+                                        <copy file="${yawi.dist.icon}" tofile="${appdir}/${yawi.app.name}.png"/>
+
+                                        <property name="appimage.name" value="${yawi.app.name}-${project.version}-${yawi.dist.arch}.AppImage"/>
+                                        <echo message="appimagetool: ${yawi.dist.dir}/${appimage.name}"/>
+                                        <exec executable="${yawi.appimagetool}" failonerror="true">
+                                            <arg value="${appdir}"/>
+                                            <arg value="${yawi.dist.dir}/${appimage.name}"/>
+                                        </exec>
+                                    </target>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+</project>

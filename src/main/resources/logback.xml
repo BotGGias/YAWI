@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Logging starts in the temp directory; once the manifest is known,
+  core.error.LogSetup.redirect re-runs this configuration with the context
+  property yawi.logDir pointing at the platform's log location
+  (%LOCALAPPDATA%\<id>\Logs, ~/.local/state/<id>, ~/Library/Logs/<id>).
+  LogSetup.redirectToFile (silent mode, option log=file) sets yawi.logFile as
+  well; yawi.consoleLevel raises the console threshold so stdout carries only
+  the silent mode's own progress lines. LogSetup.currentLogFile() always
+  names the file in use.
+-->
+<configuration>
+
+    <property name="LOG_DIR" value="${yawi.logDir:-${java.io.tmpdir}/yawi-installer}"/>
+    <property name="LOG_FILE" value="${yawi.logFile:-installer.log}"/>
+    <property name="PATTERN" value="%d{HH:mm:ss.SSS} %-5level %logger{36} - %msg%n"/>
+
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>${yawi.consoleLevel:-TRACE}</level>
+        </filter>
+        <encoder>
+            <pattern>${PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/${LOG_FILE}</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DIR}/${LOG_FILE}.%d{yyyy-MM-dd}.%i</fileNamePattern>
+            <maxFileSize>5MB</maxFileSize>
+            <maxHistory>7</maxHistory>
+            <totalSizeCap>50MB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <!-- The vendored bt library is chatty at DEBUG. -->
+    <logger name="bt" level="INFO"/>
+    <!-- Both log an ERROR with stack trace whenever their channel is closed
+         under them, i.e. on every runtime shutdown. A real accept or
+         selector failure surfaces as a failed download anyway. -->
+    <logger name="bt.net.IncomingConnectionListener" level="OFF"/>
+    <logger name="bt.net.DataReceivingLoop" level="OFF"/>
+
+    <root level="DEBUG">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="FILE"/>
+    </root>
+</configuration>

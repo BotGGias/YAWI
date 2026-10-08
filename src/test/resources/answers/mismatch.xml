@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Valid against the schema, but nothing in it fits manifest/cli/launcher-update.xml. -->
+<answers version="1" product="other-product">
+  <components>
+    <component id="core"/>
+    <component id="nope"/>
+  </components>
+  <sources>
+    <source id="launcher" kind="torrent"/>
+    <source id="ghost" kind="http"/>
+  </sources>
+  <inputs>
+    <input id="colour" value="blue"/>
+  </inputs>
+</answers>

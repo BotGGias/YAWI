@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Silent-mode tests: a launcher-like product. The test fills __VERSION__, __SHA256__ and __BASE__
+     (local HTTP server); the archive holds testpayload, a script that leaves a marker when started. -->
+<installer schemaVersion="1">
+  <product id="su-test-launcher" version="__VERSION__"><name>Test Launcher</name></product>
+  <languages default="en"><language code="en"/><language code="de"/></languages>
+  <wizard>
+    <page name="welcome"/><page name="license"/><page name="components"/><page name="destination"/>
+    <page name="source"/><page name="summary"/><page name="progress"/><page name="finish"/>
+    <license>classpath:/license/eula.txt</license>
+  </wizard>
+  <destination>
+    <default os="linux">$HOME/test-launcher</default>
+    <default os="windows">%LOCALAPPDATA%\test-launcher</default>
+    <default os="macos">$HOME/test-launcher</default>
+  </destination>
+  <sources>
+    <source id="launcher" sha256="__SHA256__">
+      <provider type="http"><url>__BASE__/custom</url></provider>
+    </source>
+  </sources>
+  <components>
+    <component id="core" required="true" selectedByDefault="true">
+      <name>Launcher</name>
+      <uses ref="launcher"/>
+      <step ref="unpack"/>
+      <step ref="exec"/>
+      <input id="port" type="int" default="4000" min="1024" max="65535"><label>Port</label></input>
+    </component>
+    <component id="extra" selectedByDefault="false">
+      <name>Extra</name>
+      <step ref="extra-dir"/>
+    </component>
+  </components>
+  <steps>
+    <step id="unpack" type="extract"><archive ref="launcher"/><to>${destination}</to></step>
+    <step id="exec" type="chmod" mode="755"><to>${destination}/testpayload</to></step>
+    <step id="extra-dir" type="mkdir"><to>${destination}/extra</to></step>
+  </steps>
+  <integration>
+    <shortcut id="main"><name>Test</name><target>${destination}/testpayload</target></shortcut>
+  </integration>
+</installer>

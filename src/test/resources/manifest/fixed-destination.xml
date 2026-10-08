@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- allowUserChange="false": the destination page shows the packager's path
+     but field and Browse are locked (E06-S01). -->
+<installer schemaVersion="1">
+  <product id="fd" version="1"><name>FD</name></product>
+  <languages default="en"><language code="en"/></languages>
+  <wizard><page name="welcome"/><page name="components"/><page name="destination"/><page name="summary"/></wizard>
+  <destination allowUserChange="false">
+    <default os="linux">$HOME/fd-fixed</default>
+    <default os="windows">%LOCALAPPDATA%\fd-fixed</default>
+    <default os="macos">$HOME/fd-fixed</default>
+  </destination>
+  <components>
+    <component id="core" required="true" size="5MiB"><name>Core</name></component>
+  </components>
+</installer>

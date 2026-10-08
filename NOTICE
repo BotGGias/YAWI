@@ -1,0 +1,33 @@
+YAWI Installer
+============
+
+This product includes software developed by third parties.
+
+bt - BitTorrent library for Java
+--------------------------------
+Copyright (c) 2016-2021 Andrei Tomashpolskiy and individual contributors.
+Licensed under the Apache License, Version 2.0 (see LICENSE).
+https://github.com/atomashpolskiy/bt
+
+Vendored copy of bt-core 1.10 under src/main/java/bt together with the
+resources metainfo.yml, infodict.yml and tracker_response.yml, plus the
+bt-http-tracker-client module under src/main/java/bt/tracker/http (ported to
+the JDK HTTP client). Local modifications are listed in
+docs/backlog/bt-patches.md.
+
+Runtime dependencies
+--------------------
+This product bundles the following third-party libraries (see each project for
+its full licence text; the installer redistributes them unmodified):
+
+- OpenJFX / JavaFX (javafx-base, -graphics, -controls, -fxml) 17.0.6
+  GPLv2 with the Classpath Exception. https://openjfx.io
+- Google Guice 6.0.0 - Apache License 2.0. https://github.com/google/guice
+- Google Guava 33.0.0-jre - Apache License 2.0. https://github.com/google/guava
+- SLF4J API 2.0.12 - MIT License. https://www.slf4j.org
+- Logback (logback-classic, logback-core) 1.4.14 - EPL 1.0 / LGPL 2.1.
+  https://logback.qos.ch
+- SnakeYAML 2.2 - Apache License 2.0. https://bitbucket.org/snakeyaml/snakeyaml
+
+A generated, versioned list of all transitive dependencies and their licences
+is in docs/THIRD-PARTY.txt (regenerate with ./mvnw -Plicenses generate-resources).

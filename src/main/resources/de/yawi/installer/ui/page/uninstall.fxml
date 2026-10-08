@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.TitledPane?>
+<?import javafx.scene.layout.VBox?>
+
+<!-- Uninstall page (E14-S03): shown after the maintenance page when the user chose to uninstall.
+     What will be removed, and the two questions - changed files, files the installer did not put
+     there. Texts with parameters (heading, count, the checkbox labels) are bound in UninstallPageController. -->
+<VBox spacing="12.0" xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="de.yawi.installer.ui.page.UninstallPageController">
+   <children>
+      <Label fx:id="heading" styleClass="page-heading" wrapText="true" />
+      <Label fx:id="count" wrapText="true" />
+      <Label fx:id="noReverse" styleClass="warning" wrapText="true" />
+      <VBox fx:id="modifiedBox" spacing="6.0">
+         <VBox.margin>
+            <Insets top="12.0" />
+         </VBox.margin>
+         <children>
+            <CheckBox fx:id="deleteModified" mnemonicParsing="false" wrapText="true" />
+            <TitledPane fx:id="modifiedPane" animated="false" expanded="false" text="%uninstall.modified.list">
+               <content>
+                  <ListView fx:id="modifiedList" prefHeight="90.0" />
+               </content>
+            </TitledPane>
+         </children>
+      </VBox>
+      <VBox fx:id="userDataBox" spacing="6.0">
+         <children>
+            <CheckBox fx:id="deleteUserData" mnemonicParsing="false" wrapText="true" />
+            <TitledPane fx:id="userDataPane" animated="false" expanded="false" text="%uninstall.userData.list">
+               <content>
+                  <ListView fx:id="userDataList" prefHeight="90.0" />
+               </content>
+            </TitledPane>
+         </children>
+      </VBox>
+      <Label fx:id="hint" styleClass="page-hint" text="%uninstall.hint" wrapText="true" />
+   </children>
+</VBox>

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Elevation tests: normal steps (the "write" step takes a second, so a cancel can catch it), one
+     elevated run-command with a reverse operation, and - in the optional component - an elevated step that
+     fails. The password input must never show in clear text. -->
+<installer schemaVersion="1">
+  <product id="elev" version="1"><name>Elevated</name></product>
+  <languages default="en"><language code="en"/></languages>
+  <wizard><page name="welcome"/><page name="components"/><page name="destination"/><page name="summary"/><page name="progress"/><page name="finish"/></wizard>
+  <destination><default os="linux">$HOME/elev</default><default os="windows">%LOCALAPPDATA%\elev</default><default os="macos">$HOME/elev</default></destination>
+  <components>
+    <component id="core" required="true" size="1MiB">
+      <name>Core</name>
+      <step ref="mk"/>
+      <step ref="write"/>
+      <step ref="service"/>
+      <input id="adminPassword" type="string" default="s3cret"><label>Admin password</label></input>
+    </component>
+    <component id="broken" size="1KiB">
+      <name>Broken</name>
+      <step ref="boom"/>
+    </component>
+  </components>
+  <steps>
+    <step id="mk" type="mkdir"><to>${destination}/made</to></step>
+    <step id="write" type="run-command">
+      <commands os="linux"><command><arg>/bin/sh</arg><arg>-c</arg><arg>sleep 1; echo normal &gt; "${destination}/normal.txt"</arg></command></commands>
+      <commands os="macos"><command><arg>/bin/sh</arg><arg>-c</arg><arg>echo normal &gt; "${destination}/normal.txt"</arg></command></commands>
+      <commands os="windows"><command><arg>cmd</arg><arg>/c</arg><arg>ping -n 2 127.0.0.1 &gt;nul &amp; echo normal &gt; "${destination}\normal.txt"</arg></command></commands>
+    </step>
+    <step id="service" type="run-command" elevated="true" weight="2">
+      <env name="SU_PW" value="${input.adminPassword}"/>
+      <commands os="linux"><command><arg>/bin/sh</arg><arg>-c</arg><arg>echo "$SU_PW" &gt; "${destination}/service.txt"</arg></command></commands>
+      <commands os="macos"><command><arg>/bin/sh</arg><arg>-c</arg><arg>echo "$SU_PW" &gt; "${destination}/service.txt"</arg></command></commands>
+      <commands os="windows"><command><arg>cmd</arg><arg>/c</arg><arg>echo %SU_PW% &gt; "${destination}\service.txt"</arg></command></commands>
+      <rollback os="linux"><command><arg>/bin/sh</arg><arg>-c</arg><arg>rm -f "${destination}/service.txt"; echo undone &gt; "${destination}/service-undone.txt"</arg></command></rollback>
+      <rollback os="macos"><command><arg>/bin/sh</arg><arg>-c</arg><arg>rm -f "${destination}/service.txt"; echo undone &gt; "${destination}/service-undone.txt"</arg></command></rollback>
+      <rollback os="windows"><command><arg>cmd</arg><arg>/c</arg><arg>del "${destination}\service.txt" &amp; echo undone &gt; "${destination}\service-undone.txt"</arg></command></rollback>
+    </step>
+    <step id="boom" type="run-command" elevated="true">
+      <commands os="linux"><command><arg>/bin/sh</arg><arg>-c</arg><arg>exit 3</arg></command></commands>
+      <commands os="macos"><command><arg>/bin/sh</arg><arg>-c</arg><arg>exit 3</arg></command></commands>
+      <commands os="windows"><command><arg>cmd</arg><arg>/c</arg><arg>exit 3</arg></command></commands>
+    </step>
+  </steps>
+</installer>

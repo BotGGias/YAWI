@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Engine tests: one run-command per onFailure policy, in this order. -->
+<installer schemaVersion="1">
+  <product id="onf" version="1"><name>OnFailure</name></product>
+  <languages default="en"><language code="en"/></languages>
+  <wizard><page name="welcome"/><page name="components"/><page name="summary"/></wizard>
+  <destination><default os="linux">$HOME/onf</default><default os="windows">%LOCALAPPDATA%\onf</default><default os="macos">$HOME/onf</default></destination>
+  <components>
+    <component id="core" required="true" size="1MiB">
+      <name>Core</name>
+      <step ref="continue-me"/>
+      <step ref="ask-me"/>
+      <step ref="abort-me"/>
+      <step ref="never"/>
+    </component>
+  </components>
+  <steps>
+    <step id="continue-me" type="run-command" onFailure="continue">
+      <commands os="linux"><command><arg>false</arg></command></commands>
+      <commands os="windows"><command><arg>cmd</arg><arg>/c</arg><arg>exit 1</arg></command></commands>
+      <commands os="macos"><command><arg>false</arg></command></commands>
+    </step>
+    <step id="ask-me" type="run-command" onFailure="ask">
+      <commands os="linux"><command><arg>false</arg></command></commands>
+      <commands os="windows"><command><arg>cmd</arg><arg>/c</arg><arg>exit 1</arg></command></commands>
+      <commands os="macos"><command><arg>false</arg></command></commands>
+    </step>
+    <step id="abort-me" type="run-command" onFailure="abort">
+      <commands os="linux"><command><arg>false</arg></command></commands>
+      <commands os="windows"><command><arg>cmd</arg><arg>/c</arg><arg>exit 1</arg></command></commands>
+      <commands os="macos"><command><arg>false</arg></command></commands>
+    </step>
+    <step id="never" type="run-command">
+      <commands os="linux"><command><arg>true</arg></command></commands>
+      <commands os="windows"><command><arg>cmd</arg><arg>/c</arg><arg>exit 0</arg></command></commands>
+      <commands os="macos"><command><arg>true</arg></command></commands>
+    </step>
+  </steps>
+</installer>

@@ -1,0 +1,41 @@
+/* Own look for all three platforms, see epic-04 "Optische Gestaltung". */
+
+.wizard-header {
+    -fx-background-color: #f4f4f4;
+}
+
+.wizard-title {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+}
+
+.wizard-buttons .button {
+    -fx-min-width: 100px;
+}
+
+.page-heading {
+    -fx-font-size: 22px;
+}
+
+.page-hint {
+    -fx-text-fill: #666666;
+}
+
+.section-title {
+    -fx-font-weight: bold;
+}
+
+.warning {
+    -fx-text-fill: #b03a2e;
+}
+
+/* Input form (E05-S05) */
+.invalid {
+    -fx-border-color: #c0392b;
+    -fx-border-radius: 3px;
+}
+
+.input-error {
+    -fx-text-fill: #c0392b;
+    -fx-font-size: 11px;
+}

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- RunCommandStep tests (POSIX: /bin/sh; Windows: cmd). -->
+<installer schemaVersion="1">
+  <product id="rc" version="1"><name>RunCommand</name></product>
+  <languages default="en"><language code="en"/></languages>
+  <wizard><page name="welcome"/><page name="components"/><page name="summary"/></wizard>
+  <destination><default os="linux">$HOME/rc</default><default os="windows">%LOCALAPPDATA%\rc</default><default os="macos">$HOME/rc</default></destination>
+  <components>
+    <component id="core" required="true" size="1MiB">
+      <name>Core</name>
+      <step ref="echo"/>
+      <input id="greeting" type="string" default="hello"><label>Greeting</label></input>
+    </component>
+  </components>
+  <steps>
+    <step id="echo" type="run-command">
+      <workingDir>${destination}</workingDir>
+      <env name="SU_GREETING" value="${input.greeting} from ${destination}"/>
+      <commands os="linux">
+        <command><arg>/bin/sh</arg><arg>-c</arg><arg>echo "$SU_GREETING"; pwd; printf '%s\n' "$1"</arg><arg>sh</arg><arg>${destination}/dir with spaces</arg></command>
+        <command><arg>/bin/sh</arg><arg>-c</arg><arg>echo second</arg></command>
+      </commands>
+      <commands os="macos">
+        <command><arg>/bin/sh</arg><arg>-c</arg><arg>echo "$SU_GREETING"; pwd; printf '%s\n' "$1"</arg><arg>sh</arg><arg>${destination}/dir with spaces</arg></command>
+        <command><arg>/bin/sh</arg><arg>-c</arg><arg>echo second</arg></command>
+      </commands>
+      <commands os="windows">
+        <command><arg>cmd</arg><arg>/c</arg><arg>echo %SU_GREETING%&amp;&amp; cd &amp;&amp; echo second</arg></command>
+      </commands>
+    </step>
+    <step id="lots" type="run-command">
+      <commands os="linux"><command><arg>/bin/sh</arg><arg>-c</arg><arg>i=0; while [ $i -lt 10000 ]; do echo "line $i"; i=$((i+1)); done</arg></command></commands>
+      <commands os="macos"><command><arg>/bin/sh</arg><arg>-c</arg><arg>i=0; while [ $i -lt 10000 ]; do echo "line $i"; i=$((i+1)); done</arg></command></commands>
+    </step>
+    <step id="hang" type="run-command" timeoutSeconds="1">
+      <commands os="linux"><command><arg>/bin/sh</arg><arg>-c</arg><arg>echo started; sleep 30</arg></command></commands>
+      <commands os="macos"><command><arg>/bin/sh</arg><arg>-c</arg><arg>echo started; sleep 30</arg></command></commands>
+    </step>
+    <step id="exit3" type="run-command">
+      <commands os="linux"><command><arg>/bin/sh</arg><arg>-c</arg><arg>echo failing; echo details 1>&amp;2; exit 3</arg></command><command><arg>/bin/sh</arg><arg>-c</arg><arg>echo never</arg></command></commands>
+      <commands os="macos"><command><arg>/bin/sh</arg><arg>-c</arg><arg>echo failing; echo details 1>&amp;2; exit 3</arg></command></commands>
+      <commands os="windows"><command><arg>cmd</arg><arg>/c</arg><arg>echo failing&amp;&amp; exit 3</arg></command></commands>
+    </step>
+    <step id="expect3" type="run-command" expectExitCode="3">
+      <commands os="linux"><command><arg>/bin/sh</arg><arg>-c</arg><arg>exit 3</arg></command></commands>
+      <commands os="macos"><command><arg>/bin/sh</arg><arg>-c</arg><arg>exit 3</arg></command></commands>
+      <commands os="windows"><command><arg>cmd</arg><arg>/c</arg><arg>exit 3</arg></command></commands>
+    </step>
+    <step id="missing-exe" type="run-command">
+      <commands os="linux"><command><arg>/no/such/program</arg></command></commands>
+      <commands os="macos"><command><arg>/no/such/program</arg></command></commands>
+      <commands os="windows"><command><arg>C:\no\such\program.exe</arg></command></commands>
+    </step>
+    <step id="bad-workdir" type="run-command">
+      <workingDir>${destination}/nope</workingDir>
+      <commands os="linux"><command><arg>true</arg></command></commands>
+      <commands os="macos"><command><arg>true</arg></command></commands>
+      <commands os="windows"><command><arg>cmd</arg><arg>/c</arg><arg>exit 0</arg></command></commands>
+    </step>
+    <step id="sleep" type="run-command">
+      <commands os="linux"><command><arg>/bin/sh</arg><arg>-c</arg><arg>echo sleeping; sleep 30</arg></command></commands>
+      <commands os="macos"><command><arg>/bin/sh</arg><arg>-c</arg><arg>echo sleeping; sleep 30</arg></command></commands>
+    </step>
+  </steps>
+</installer>

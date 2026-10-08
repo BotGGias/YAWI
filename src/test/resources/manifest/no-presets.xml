@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- No <presets> block: the preset row must disappear, core is required. -->
+<installer schemaVersion="1">
+  <product id="np" version="1"><name>NP</name></product>
+  <languages default="en"><language code="en"/></languages>
+  <wizard><page name="welcome"/><page name="components"/><page name="summary"/></wizard>
+  <destination><default os="linux">$HOME/np</default><default os="windows">%LOCALAPPDATA%\np</default><default os="macos">$HOME/np</default></destination>
+  <components>
+    <component id="core" required="true" size="5MiB"><name>Core</name></component>
+    <component id="extras" size="1MiB"><name>Extras</name></component>
+  </components>
+</installer>

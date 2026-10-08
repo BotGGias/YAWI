@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TreeView?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<!-- Components page content: presets, check box tree with the description of
+     the highlighted component, sizes, and the form for the selected
+     components' <input> elements (built by InputForm). -->
+<VBox spacing="10.0" xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="de.yawi.installer.ui.page.ComponentsPageController">
+   <children>
+      <HBox fx:id="presetRow" alignment="CENTER_LEFT" spacing="10.0">
+         <children>
+            <Label fx:id="presetLabel" text="%components.preset" />
+            <ComboBox fx:id="presets" prefWidth="220.0" />
+         </children>
+      </HBox>
+      <Label fx:id="question" text="%components.question" />
+      <HBox spacing="16.0" VBox.vgrow="ALWAYS">
+         <children>
+            <TreeView fx:id="tree" prefHeight="220.0" showRoot="false" HBox.hgrow="ALWAYS" />
+            <VBox spacing="6.0" prefWidth="260.0" minWidth="200.0">
+               <children>
+                  <Label fx:id="descriptionTitle" styleClass="section-title" text="%components.description" />
+                  <Label fx:id="description" wrapText="true" />
+                  <Label fx:id="lockHint" styleClass="page-hint" wrapText="true">
+                     <VBox.margin>
+                        <Insets top="8.0" />
+                     </VBox.margin>
+                  </Label>
+               </children>
+            </VBox>
+         </children>
+      </HBox>
+      <VBox spacing="2.0">
+         <children>
+            <Label fx:id="installSize" />
+            <Label fx:id="downloadSize" styleClass="page-hint" />
+            <Label fx:id="spaceWarning" styleClass="warning" wrapText="true" />
+         </children>
+      </VBox>
+      <Label fx:id="optionsTitle" styleClass="section-title" text="%components.options">
+         <VBox.margin>
+            <Insets top="6.0" />
+         </VBox.margin>
+      </Label>
+      <VBox fx:id="inputs" spacing="6.0" />
+      <CheckBox fx:id="addToPath" mnemonicParsing="false" wrapText="true" />
+      <CheckBox fx:id="associate" mnemonicParsing="false" wrapText="true">
+         <VBox.margin>
+            <Insets top="6.0" />
+         </VBox.margin>
+      </CheckBox>
+   </children>
+</VBox>

@@ -1,0 +1,534 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Installer manifest, schema version 1.
+
+  Kept in step with docs/backlog/manifest-schema.md. The installer loads this
+  file from the classpath only; the xsi:noNamespaceSchemaLocation hint in a
+  manifest exists for the IDE and is ignored at runtime .
+
+  What this schema checks: structure, required attributes, value types and
+  ranges, id uniqueness (xs:key) and reference integrity (xs:keyref). What it
+  cannot check because XSD 1.0 has no conditional content: the children a
+  <step> or <provider> needs for its @type - the ManifestReader reports those.
+  Business rules (dependency cycles, known page names, ...) live in
+  ManifestValidator.
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           elementFormDefault="qualified"
+           attributeFormDefault="unqualified">
+
+  <!-- ====== simple types ============================================== -->
+
+  <xs:simpleType name="idType">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="[A-Za-z][A-Za-z0-9_\-]*"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- Same pattern as ByteSize.PATTERN; a test keeps both in step. -->
+  <xs:simpleType name="byteSize">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="[0-9]+([KMGT]i?B|B)?"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- Same pattern as Durations.PATTERN; a test keeps both in step. -->
+  <xs:simpleType name="duration">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="[0-9]+(ms|s|m)"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="torrentFallback">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="auto"/>
+      <xs:enumeration value="ask"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="sha256">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="[0-9a-fA-F]{64}"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="osName">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="windows"/>
+      <xs:enumeration value="linux"/>
+      <xs:enumeration value="macos"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="stepType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="extract"/>
+      <xs:enumeration value="template"/>
+      <xs:enumeration value="copy"/>
+      <xs:enumeration value="mkdir"/>
+      <xs:enumeration value="chmod"/>
+      <xs:enumeration value="run-command"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- Octal POSIX mode for chmod, e.g. 755 or 0644. -->
+  <xs:simpleType name="fileMode">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="[0-7]{3,4}"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="providerType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="bundled"/>
+      <xs:enumeration value="http"/>
+      <xs:enumeration value="torrent"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="inputType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="string"/>
+      <xs:enumeration value="int"/>
+      <xs:enumeration value="bool"/>
+      <xs:enumeration value="choice"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="onFailure">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="abort"/>
+      <xs:enumeration value="continue"/>
+      <xs:enumeration value="ask"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="nonEmptyString">
+    <xs:restriction base="xs:string">
+      <xs:minLength value="1"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- ====== reusable complex types ==================================== -->
+
+  <!-- <x ref="id"/> -->
+  <xs:complexType name="refType">
+    <xs:attribute name="ref" type="idType" use="required"/>
+  </xs:complexType>
+
+  <!-- <x ref="id" os="linux"/>; @os missing means "every OS". Lets a component
+       point at a different source/step per platform (e.g. <uses> the archive
+       built for that OS, <step> that unpacks it). -->
+  <xs:complexType name="osRefType">
+    <xs:complexContent>
+      <xs:extension base="refType">
+        <xs:attribute name="os" type="osName" use="optional"/>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <!-- <x os="linux">text</x> -->
+  <xs:complexType name="osText">
+    <xs:simpleContent>
+      <xs:extension base="nonEmptyString">
+        <xs:attribute name="os" type="osName" use="required"/>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+
+  <xs:complexType name="commandType">
+    <xs:sequence>
+      <xs:element name="arg" type="xs:string" minOccurs="1" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="commandsType">
+    <xs:sequence>
+      <xs:element name="command" type="commandType" minOccurs="1" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="os" type="osName" use="required"/>
+  </xs:complexType>
+
+  <!-- ====== product =================================================== -->
+
+  <xs:complexType name="productType">
+    <xs:sequence>
+      <xs:element name="name" type="nonEmptyString"/>
+      <xs:element name="vendor" type="nonEmptyString" minOccurs="0"/>
+      <xs:element name="homepage" type="xs:anyURI" minOccurs="0"/>
+      <xs:element name="icon" type="nonEmptyString" minOccurs="0"/>
+    </xs:sequence>
+    <xs:attribute name="id" type="idType" use="required"/>
+    <xs:attribute name="version" type="nonEmptyString" use="required"/>
+  </xs:complexType>
+
+  <!-- ====== languages =========================================== -->
+
+  <xs:complexType name="languagesType">
+    <xs:sequence>
+      <xs:element name="language" minOccurs="1" maxOccurs="unbounded">
+        <xs:complexType>
+          <xs:attribute name="code" type="xs:language" use="required"/>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+    <!-- Must be one of the listed codes: keyref defaultLanguageRef. -->
+    <xs:attribute name="default" type="xs:language" use="required"/>
+  </xs:complexType>
+
+  <!-- ====== wizard ============================================== -->
+
+  <xs:complexType name="wizardType">
+    <xs:sequence>
+      <!-- Order of <page> = page flow. Names are checked by ManifestValidator. -->
+      <xs:element name="page" minOccurs="1" maxOccurs="unbounded">
+        <xs:complexType>
+          <xs:attribute name="name" type="idType" use="required"/>
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="license" type="nonEmptyString" minOccurs="0"/>
+    </xs:sequence>
+    <!-- Preferred window size in pixels; the installer defaults to 800x520. -->
+    <xs:attribute name="width" type="xs:positiveInteger" use="optional"/>
+    <xs:attribute name="height" type="xs:positiveInteger" use="optional"/>
+  </xs:complexType>
+
+  <!-- ====== destination ================================= -->
+
+  <xs:complexType name="destinationType">
+    <xs:sequence>
+      <xs:element name="default" type="osText" minOccurs="1" maxOccurs="unbounded"/>
+      <xs:element name="systemWide" type="osText" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="allowUserChange" type="xs:boolean" default="true"/>
+    <xs:attribute name="minFreeBytes" type="byteSize"/>
+  </xs:complexType>
+
+  <!-- ====== sources ===================================== -->
+
+  <xs:complexType name="providerType_">
+    <!-- Which children are required depends on @type; see ManifestReader:
+         bundled: path / http: url+ / torrent: magnet or torrentFile -->
+    <xs:sequence>
+      <xs:element name="path" type="nonEmptyString" minOccurs="0"/>
+      <xs:element name="url" type="xs:anyURI" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="magnet" type="nonEmptyString" minOccurs="0"/>
+      <xs:element name="torrentFile" type="nonEmptyString" minOccurs="0"/>
+    </xs:sequence>
+    <xs:attribute name="type" type="providerType" use="required"/>
+    <!-- torrent only; ManifestReader rejects them on other types:
+         port = listen port (default 6881, a free one if busy, 0 = any), peerTimeout =
+         give up and try the next provider when no peer connected for this
+         long (default 90s), fallback = switch automatically or ask the user
+         (default auto), lsd/pex = local service discovery and peer exchange
+         (default true). -->
+    <xs:attribute name="port" type="xs:unsignedShort"/>
+    <xs:attribute name="peerTimeout" type="duration"/>
+    <xs:attribute name="fallback" type="torrentFallback"/>
+    <xs:attribute name="lsd" type="xs:boolean"/>
+    <xs:attribute name="pex" type="xs:boolean"/>
+  </xs:complexType>
+
+  <xs:complexType name="sourceType">
+    <xs:sequence>
+      <!-- minOccurs=0 on purpose: "at least one provider" is a validator
+           rule so that the message can name the source. -->
+      <xs:element name="provider" type="providerType_" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="versionCheck" minOccurs="0">
+        <xs:complexType>
+          <xs:attribute name="url" type="xs:anyURI" use="required"/>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+    <xs:attribute name="id" type="idType" use="required"/>
+    <xs:attribute name="size" type="byteSize"/>
+    <xs:attribute name="sha256" type="sha256"/>
+  </xs:complexType>
+
+  <xs:complexType name="sourcesType">
+    <xs:sequence>
+      <xs:element name="source" type="sourceType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- ====== components ==========================================
+       <uses>/<step> may carry @os to pick the source/step for one platform
+       only; a ref without @os applies on every OS. A component typically
+       lists one <uses>/<step> per OS it ships a source for. -->
+
+
+  <!-- <option value="lan">LAN</option>, the choices of a type="choice" input -->
+  <xs:complexType name="optionType">
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute name="value" type="nonEmptyString" use="required"/>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+
+  <xs:complexType name="inputType_">
+    <xs:sequence>
+      <xs:element name="label" type="nonEmptyString"/>
+      <xs:element name="option" type="optionType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="id" type="idType" use="required"/>
+    <xs:attribute name="type" type="inputType" use="required"/>
+    <xs:attribute name="default" type="xs:string"/>
+    <xs:attribute name="min" type="xs:long"/>
+    <xs:attribute name="max" type="xs:long"/>
+    <!-- required: an empty value blocks "Next". -->
+    <xs:attribute name="required" type="xs:boolean" default="false"/>
+  </xs:complexType>
+
+  <xs:complexType name="componentType">
+    <xs:sequence>
+      <xs:element name="name" type="nonEmptyString"/>
+      <xs:element name="description" type="xs:string" minOccurs="0"/>
+      <xs:element name="dependsOn" type="refType" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="uses" type="osRefType" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="step" type="osRefType" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="input" type="inputType_" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="id" type="idType" use="required"/>
+    <xs:attribute name="required" type="xs:boolean" default="false"/>
+    <xs:attribute name="selectedByDefault" type="xs:boolean" default="false"/>
+    <xs:attribute name="size" type="byteSize"/>
+  </xs:complexType>
+
+  <xs:complexType name="componentsType">
+    <xs:sequence>
+      <xs:element name="component" type="componentType" minOccurs="1" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="presetType">
+    <xs:sequence>
+      <xs:element name="component" type="refType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="id" type="idType" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="presetsType">
+    <xs:sequence>
+      <xs:element name="preset" type="presetType" minOccurs="1" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- ====== steps =============================================== -->
+
+  <xs:complexType name="stepType_">
+    <!-- Which children are required depends on @type; see ManifestReader:
+         extract: archive, to / template: from, to / copy: from, to /
+         mkdir: to / chmod: to, @mode / run-command: commands+ -->
+    <xs:sequence>
+      <xs:element name="archive" type="refType" minOccurs="0"/>
+      <xs:element name="from" type="nonEmptyString" minOccurs="0"/>
+      <xs:element name="to" type="nonEmptyString" minOccurs="0"/>
+      <xs:element name="replace" minOccurs="0" maxOccurs="unbounded">
+        <xs:complexType>
+          <xs:attribute name="key" type="nonEmptyString" use="required"/>
+          <xs:attribute name="value" type="xs:string" use="required"/>
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="workingDir" type="nonEmptyString" minOccurs="0"/>
+      <xs:element name="env" minOccurs="0" maxOccurs="unbounded">
+        <xs:complexType>
+          <xs:attribute name="name" type="nonEmptyString" use="required"/>
+          <xs:attribute name="value" type="xs:string" use="required"/>
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="commands" type="commandsType" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="rollback" type="commandsType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="id" type="idType" use="required"/>
+    <xs:attribute name="type" type="stepType" use="required"/>
+    <xs:attribute name="weight" type="xs:positiveInteger" default="1"/>
+    <xs:attribute name="expectExitCode" type="xs:int" default="0"/>
+    <xs:attribute name="timeoutSeconds" type="xs:nonNegativeInteger" default="0"/>
+    <xs:attribute name="onFailure" type="onFailure" default="abort"/>
+    <xs:attribute name="elevated" type="xs:boolean" default="false"/>
+    <!-- chmod only -->
+    <xs:attribute name="mode" type="fileMode"/>
+    <!-- template only: charset of the template and the written file -->
+    <xs:attribute name="encoding" type="nonEmptyString" default="UTF-8"/>
+  </xs:complexType>
+
+  <xs:complexType name="stepsType">
+    <xs:sequence>
+      <xs:element name="step" type="stepType_" minOccurs="1" maxOccurs="unbounded">
+        <xs:unique name="commandsOsUnique">
+          <xs:selector xpath="commands"/>
+          <xs:field xpath="@os"/>
+        </xs:unique>
+        <xs:unique name="rollbackOsUnique">
+          <xs:selector xpath="rollback"/>
+          <xs:field xpath="@os"/>
+        </xs:unique>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- ====== integration ========================================= -->
+
+  <xs:complexType name="shortcutType">
+    <xs:sequence>
+      <xs:element name="name" type="nonEmptyString"/>
+      <xs:element name="target" type="nonEmptyString"/>
+      <xs:element name="icon" type="nonEmptyString" minOccurs="0"/>
+    </xs:sequence>
+    <xs:attribute name="id" type="idType" use="required"/>
+    <xs:attribute name="desktop" type="xs:boolean" default="false"/>
+    <xs:attribute name="menu" type="xs:boolean" default="false"/>
+  </xs:complexType>
+
+  <xs:complexType name="fileAssociationType">
+    <xs:sequence>
+      <xs:element name="description" type="xs:string" minOccurs="0"/>
+    </xs:sequence>
+    <xs:attribute name="extension" use="required">
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:pattern value="\.[A-Za-z0-9]+"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="target" type="nonEmptyString" use="required"/>
+    <xs:attribute name="default" type="xs:boolean" default="true"/>
+  </xs:complexType>
+
+  <xs:complexType name="integrationType">
+    <xs:choice minOccurs="0" maxOccurs="unbounded">
+      <xs:element name="shortcut" type="shortcutType"/>
+      <xs:element name="pathEntry" type="nonEmptyString"/>
+      <xs:element name="fileAssociation" type="fileAssociationType"/>
+    </xs:choice>
+  </xs:complexType>
+
+  <!-- ====== i18n ================================================ -->
+
+  <xs:complexType name="messageType">
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute name="path" type="nonEmptyString" use="required"/>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+
+  <xs:complexType name="messagesType">
+    <xs:sequence>
+      <xs:element name="message" type="messageType" minOccurs="1" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="lang" type="xs:language" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="i18nType">
+    <xs:sequence>
+      <xs:element name="messages" type="messagesType" minOccurs="1" maxOccurs="unbounded">
+        <xs:unique name="messagePathUnique">
+          <xs:selector xpath="message"/>
+          <xs:field xpath="@path"/>
+        </xs:unique>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- ====== root ====================================================== -->
+
+  <xs:element name="installer">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="product" type="productType"/>
+        <xs:element name="languages" type="languagesType"/>
+        <xs:element name="wizard" type="wizardType"/>
+        <xs:element name="destination" type="destinationType">
+          <xs:unique name="defaultOsUnique">
+            <xs:selector xpath="default"/>
+            <xs:field xpath="@os"/>
+          </xs:unique>
+          <xs:unique name="systemWideOsUnique">
+            <xs:selector xpath="systemWide"/>
+            <xs:field xpath="@os"/>
+          </xs:unique>
+        </xs:element>
+        <xs:element name="sources" type="sourcesType" minOccurs="0"/>
+        <xs:element name="components" type="componentsType"/>
+        <xs:element name="presets" type="presetsType" minOccurs="0"/>
+        <xs:element name="steps" type="stepsType" minOccurs="0"/>
+        <xs:element name="integration" type="integrationType" minOccurs="0"/>
+        <xs:element name="i18n" type="i18nType" minOccurs="0"/>
+      </xs:sequence>
+      <!-- Known versions are checked by ManifestValidator, which can phrase
+           "version 2 not supported" better than an enumeration would. -->
+      <xs:attribute name="schemaVersion" type="xs:positiveInteger" use="required"/>
+    </xs:complexType>
+
+    <!-- id uniqueness -->
+    <xs:key name="sourceKey">
+      <xs:selector xpath="sources/source"/>
+      <xs:field xpath="@id"/>
+    </xs:key>
+    <xs:key name="componentKey">
+      <xs:selector xpath="components/component"/>
+      <xs:field xpath="@id"/>
+    </xs:key>
+    <xs:key name="stepKey">
+      <xs:selector xpath="steps/step"/>
+      <xs:field xpath="@id"/>
+    </xs:key>
+    <xs:key name="inputKey">
+      <xs:selector xpath="components/component/input"/>
+      <xs:field xpath="@id"/>
+    </xs:key>
+    <xs:key name="languageKey">
+      <xs:selector xpath="languages/language"/>
+      <xs:field xpath="@code"/>
+    </xs:key>
+    <xs:unique name="presetIdUnique">
+      <xs:selector xpath="presets/preset"/>
+      <xs:field xpath="@id"/>
+    </xs:unique>
+    <xs:unique name="pageNameUnique">
+      <xs:selector xpath="wizard/page"/>
+      <xs:field xpath="@name"/>
+    </xs:unique>
+    <xs:unique name="shortcutIdUnique">
+      <xs:selector xpath="integration/shortcut"/>
+      <xs:field xpath="@id"/>
+    </xs:unique>
+    <xs:unique name="messagesLangUnique">
+      <xs:selector xpath="i18n/messages"/>
+      <xs:field xpath="@lang"/>
+    </xs:unique>
+
+    <!-- reference integrity -->
+    <xs:keyref name="usesRef" refer="sourceKey">
+      <xs:selector xpath="components/component/uses"/>
+      <xs:field xpath="@ref"/>
+    </xs:keyref>
+    <xs:keyref name="componentStepRef" refer="stepKey">
+      <xs:selector xpath="components/component/step"/>
+      <xs:field xpath="@ref"/>
+    </xs:keyref>
+    <xs:keyref name="dependsOnRef" refer="componentKey">
+      <xs:selector xpath="components/component/dependsOn"/>
+      <xs:field xpath="@ref"/>
+    </xs:keyref>
+    <xs:keyref name="archiveRef" refer="sourceKey">
+      <xs:selector xpath="steps/step/archive"/>
+      <xs:field xpath="@ref"/>
+    </xs:keyref>
+    <xs:keyref name="presetComponentRef" refer="componentKey">
+      <xs:selector xpath="presets/preset/component"/>
+      <xs:field xpath="@ref"/>
+    </xs:keyref>
+    <xs:keyref name="defaultLanguageRef" refer="languageKey">
+      <xs:selector xpath="languages"/>
+      <xs:field xpath="@default"/>
+    </xs:keyref>
+    <xs:keyref name="messagesLangRef" refer="languageKey">
+      <xs:selector xpath="i18n/messages"/>
+      <xs:field xpath="@lang"/>
+    </xs:keyref>
+  </xs:element>
+
+</xs:schema>

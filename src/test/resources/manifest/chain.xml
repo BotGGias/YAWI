@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Dependency chain a -> b -> c, nothing required: exercises locking and
+     "nothing selected". Preset typical keeps the manifest valid. -->
+<installer schemaVersion="1">
+  <product id="chain" version="1"><name>Chain</name></product>
+  <languages default="en"><language code="en"/><language code="de"/></languages>
+  <wizard><page name="welcome"/><page name="components"/><page name="summary"/></wizard>
+  <destination><default os="linux">$HOME/chain</default><default os="windows">%LOCALAPPDATA%\chain</default><default os="macos">$HOME/chain</default></destination>
+  <sources>
+    <source id="data-c" size="10MiB"><provider type="bundled"><path>classpath:/c.zip</path></provider></source>
+    <source id="data-ab" size="30MiB"><provider type="bundled"><path>classpath:/ab.zip</path></provider></source>
+  </sources>
+  <components>
+    <component id="c" selectedByDefault="true" size="1MiB">
+      <name>C</name><description>Base of everything.</description>
+      <uses ref="data-c"/>
+    </component>
+    <component id="b" size="2MiB">
+      <name>B</name><description>Needs C.</description>
+      <dependsOn ref="c"/>
+      <uses ref="data-ab"/>
+    </component>
+    <component id="a" size="4MiB">
+      <name>A</name><description>Needs B.</description>
+      <dependsOn ref="b"/>
+      <uses ref="data-ab"/>
+    </component>
+  </components>
+  <presets>
+    <preset id="typical"><component ref="c"/></preset>
+    <preset id="full"><component ref="a"/></preset>
+  </presets>
+</installer>

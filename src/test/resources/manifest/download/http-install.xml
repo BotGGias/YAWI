@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Progress page test: the only source is a download from the local server (__BASE__); source page has nothing to choose. -->
+<installer schemaVersion="1">
+  <product id="hi" version="1.0.0"><name>HttpInstall</name></product>
+  <languages default="en"><language code="en"/></languages>
+  <wizard>
+    <page name="welcome"/><page name="components"/><page name="destination"/><page name="source"/>
+    <page name="summary"/><page name="progress"/><page name="finish"/>
+  </wizard>
+  <destination><default os="linux">$HOME/hi</default><default os="windows">%LOCALAPPDATA%\hi</default><default os="macos">$HOME/hi</default></destination>
+  <sources>
+    <source id="data" size="702" sha256="d8e1dea8f94870e66a0a34395e895bcbcab4245f99ec96f4b868beda1d315962">
+      <provider type="http"><url>__BASE__/missing</url><url>__BASE__/custom</url></provider>
+    </source>
+  </sources>
+  <components>
+    <component id="core" required="true" size="1MiB"><name>Core</name><uses ref="data"/><step ref="unpack"/></component>
+  </components>
+  <steps>
+    <step id="unpack" type="extract"><archive ref="data"/><to>${destination}</to></step>
+  </steps>
+</installer>

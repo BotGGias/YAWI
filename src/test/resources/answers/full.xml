@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Every element the answer file knows ; fits manifest/cli/launcher-update.xml. -->
+<answers version="1" product="su-test-launcher">
+  <language>de</language>
+  <destination allUsers="false">/tmp/su-answers-test</destination>
+  <components>
+    <component id="core"/>
+    <component id="extra"/>
+  </components>
+  <sources>
+    <source id="launcher" kind="http"/>
+  </sources>
+  <inputs>
+    <input id="port" value="5005"/>
+  </inputs>
+  <license accepted="true"/>
+</answers>

@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.RadioButton?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.ToggleGroup?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<!-- Destination page content: the install folder, editable by hand or
+     through a DirectoryChooser (locked when destination/@allowUserChange
+     is false), the free/required space, and the findings of the
+     DestinationValidator with the confirmation for a non-empty folder.
+     The scope radio buttons switch between the per-user and the system-wide
+     default; the elevation hint follows the check of the current path. -->
+<VBox spacing="10.0" xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="de.yawi.installer.ui.page.DestinationPageController">
+   <children>
+      <Label fx:id="hint" wrapText="true" />
+      <fx:define>
+         <ToggleGroup fx:id="scope" />
+      </fx:define>
+      <HBox spacing="16.0">
+         <children>
+            <RadioButton fx:id="scopeUser" mnemonicParsing="false" selected="true" text="%destination.scope.user" toggleGroup="$scope" />
+            <RadioButton fx:id="scopeAll" mnemonicParsing="false" text="%destination.scope.all" toggleGroup="$scope" />
+         </children>
+      </HBox>
+      <Label fx:id="folderLabel" text="%destination.folder" />
+      <HBox alignment="CENTER_LEFT" spacing="8.0">
+         <children>
+            <TextField fx:id="path" HBox.hgrow="ALWAYS" />
+            <Button fx:id="browse" mnemonicParsing="false" onAction="#browse" text="%destination.browse" />
+         </children>
+      </HBox>
+      <Label fx:id="space" styleClass="page-hint" />
+      <VBox fx:id="messages" spacing="4.0">
+         <VBox.margin>
+            <Insets top="6.0" />
+         </VBox.margin>
+      </VBox>
+      <CheckBox fx:id="confirmNotEmpty" mnemonicParsing="false" text="%destination.confirmNotEmpty" />
+      <Label fx:id="elevationHint" styleClass="page-hint" text="%destination.hint.elevation" wrapText="true" />
+   </children>
+</VBox>

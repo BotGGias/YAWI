@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Answer file for the silent mode, format version 1.
+
+  An administrator writes the answers the wizard would ask for into this file
+  and passes it to the silent mode as the "config" option (an XML comment
+  cannot spell the double dash). Command line
+  arguments take precedence over the file, the file over the manifest's
+  defaults. Every child element is optional; what is given must be complete
+  (an <input> without @value is a schema error, never a guessed default).
+
+  The installer loads this schema from the classpath only; a
+  xsi:noNamespaceSchemaLocation hint in a file is for the IDE and ignored
+  at runtime. What the schema cannot check - that the ids exist in the
+  manifest and that a source offers the chosen kind - AnswerFileReader.check
+  reports against the manifest.
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           elementFormDefault="qualified"
+           attributeFormDefault="unqualified">
+
+  <!-- Same pattern as the manifest's idType. -->
+  <xs:simpleType name="idType">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="[A-Za-z][A-Za-z0-9_\-]*"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- The names of core.download.ProviderKind, lower case. -->
+  <xs:simpleType name="sourceKind">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="bundled"/>
+      <xs:enumeration value="http"/>
+      <xs:enumeration value="torrent"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:complexType name="destinationType">
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <!-- true: the manifest's system-wide folder is the default when the text is empty,
+             and menu entries go to all users. -->
+        <xs:attribute name="allUsers" type="xs:boolean" default="false"/>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+
+  <xs:complexType name="componentsType">
+    <xs:sequence>
+      <xs:element name="component" minOccurs="1" maxOccurs="unbounded">
+        <xs:complexType>
+          <xs:attribute name="id" type="idType" use="required"/>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- E13-S02: whether the manifest's file associations are created. -->
+  <xs:complexType name="fileAssociationsType">
+    <xs:attribute name="enabled" type="xs:boolean" use="required"/>
+  </xs:complexType>
+
+  <!-- E13-S03: whether the manifest's PATH entries are added. -->
+  <xs:complexType name="pathEntriesType">
+    <xs:attribute name="enabled" type="xs:boolean" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="sourcesType">
+    <xs:sequence>
+      <xs:element name="source" minOccurs="1" maxOccurs="unbounded">
+        <xs:complexType>
+          <xs:attribute name="id" type="idType" use="required"/>
+          <xs:attribute name="kind" type="sourceKind" use="required"/>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="inputsType">
+    <xs:sequence>
+      <xs:element name="input" minOccurs="1" maxOccurs="unbounded">
+        <xs:complexType>
+          <xs:attribute name="id" type="idType" use="required"/>
+          <xs:attribute name="value" type="xs:string" use="required"/>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="licenseType">
+    <xs:attribute name="accepted" type="xs:boolean" use="required"/>
+  </xs:complexType>
+
+  <!-- ====== root ====================================================== -->
+
+  <xs:element name="answers">
+    <xs:complexType>
+      <xs:sequence>
+        <!-- Language code as in the manifest's <languages>, e.g. "de". -->
+        <xs:element name="language" type="xs:language" minOccurs="0"/>
+        <xs:element name="destination" type="destinationType" minOccurs="0"/>
+        <xs:element name="components" type="componentsType" minOccurs="0">
+          <xs:unique name="componentIdUnique">
+            <xs:selector xpath="component"/>
+            <xs:field xpath="@id"/>
+          </xs:unique>
+        </xs:element>
+        <xs:element name="fileAssociations" type="fileAssociationsType" minOccurs="0"/>
+        <xs:element name="pathEntries" type="pathEntriesType" minOccurs="0"/>
+        <xs:element name="sources" type="sourcesType" minOccurs="0">
+          <xs:unique name="sourceIdUnique">
+            <xs:selector xpath="source"/>
+            <xs:field xpath="@id"/>
+          </xs:unique>
+        </xs:element>
+        <xs:element name="inputs" type="inputsType" minOccurs="0">
+          <xs:unique name="inputIdUnique">
+            <xs:selector xpath="input"/>
+            <xs:field xpath="@id"/>
+          </xs:unique>
+        </xs:element>
+        <xs:element name="license" type="licenseType" minOccurs="0"/>
+      </xs:sequence>
+      <xs:attribute name="version" type="xs:positiveInteger" use="required"/>
+      <!-- Optional guard: the manifest's product id this file was written for. -->
+      <xs:attribute name="product" type="idType"/>
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.VBox?>
+
+<!-- Welcome page content. title/version are bound in WelcomePageController
+     (product name and version from the manifest). -->
+<VBox spacing="10.0" xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="de.yawi.installer.ui.page.WelcomePageController">
+   <children>
+      <Label fx:id="title" styleClass="page-heading" wrapText="true" />
+      <Label fx:id="version" styleClass="page-hint" />
+      <Label fx:id="languageLabel" text="%welcome.language">
+         <VBox.margin>
+            <Insets top="40.0" />
+         </VBox.margin>
+      </Label>
+      <ComboBox fx:id="language" onAction="#languageChanged" prefWidth="200.0" />
+   </children>
+</VBox>

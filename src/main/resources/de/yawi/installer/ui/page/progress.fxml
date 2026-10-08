@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.ProgressBar?>
+<?import javafx.scene.control.TitledPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+
+<!-- Progress page content: overall and step progress, the current step and
+     file, elapsed time, the outcome, and the live output in a collapsed
+     detail pane (E11-S04). Driven by InstallTask. -->
+<VBox spacing="8.0" xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="de.yawi.installer.ui.page.ProgressPageController">
+   <children>
+      <Label fx:id="hint" text="%progress.hint" wrapText="true" />
+      <Label fx:id="stepLabel" styleClass="section-title">
+         <VBox.margin>
+            <Insets top="6.0" />
+         </VBox.margin>
+      </Label>
+      <ProgressBar fx:id="overallProgress" maxWidth="Infinity" progress="0.0" />
+      <ProgressBar fx:id="stepProgress" maxWidth="Infinity" progress="-1.0" />
+      <HBox spacing="12.0">
+         <children>
+            <Label fx:id="status" styleClass="page-hint" HBox.hgrow="ALWAYS" maxWidth="Infinity" />
+            <Region HBox.hgrow="ALWAYS" />
+            <Label fx:id="elapsed" styleClass="page-hint" />
+         </children>
+      </HBox>
+      <Label fx:id="outcome" wrapText="true">
+         <VBox.margin>
+            <Insets top="6.0" />
+         </VBox.margin>
+      </Label>
+      <Label fx:id="outcomeHint" styleClass="page-hint" wrapText="true" />
+      <TitledPane fx:id="details" animated="false" expanded="false" text="%progress.details" VBox.vgrow="ALWAYS">
+         <content>
+            <ListView fx:id="log" prefHeight="160.0" />
+         </content>
+      </TitledPane>
+   </children>
+</VBox>

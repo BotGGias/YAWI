@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Hyperlink?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TitledPane?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.VBox?>
+
+<!-- Summary page content; the value labels are bound in SummaryPageController. -->
+<VBox spacing="12.0" xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="de.yawi.installer.ui.page.SummaryPageController">
+   <children>
+      <Label fx:id="hint" text="%summary.hint" wrapText="true" />
+      <GridPane hgap="16.0" vgap="8.0">
+         <VBox.margin>
+            <Insets top="10.0" />
+         </VBox.margin>
+         <columnConstraints>
+            <ColumnConstraints halignment="RIGHT" minWidth="140.0" />
+            <ColumnConstraints hgrow="ALWAYS" />
+         </columnConstraints>
+         <children>
+            <Label text="%summary.destination" GridPane.rowIndex="0" />
+            <Label fx:id="destination" wrapText="true" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+            <Label text="%summary.components" GridPane.rowIndex="1" />
+            <Label fx:id="components" wrapText="true" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+            <Label text="%summary.sources" GridPane.rowIndex="2" />
+            <Label fx:id="sources" wrapText="true" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+            <Label text="%summary.space" GridPane.rowIndex="3" />
+            <Label fx:id="space" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+            <Label text="%summary.manifest" GridPane.rowIndex="4" />
+            <Label fx:id="manifest" styleClass="page-hint" wrapText="true" GridPane.columnIndex="1" GridPane.rowIndex="4" />
+            <!-- E12-S01: only shown when the run needs administrator rights -->
+            <Label fx:id="elevationCaption" text="%summary.elevation" GridPane.rowIndex="5" />
+            <VBox fx:id="elevationBox" spacing="4.0" GridPane.columnIndex="1" GridPane.rowIndex="5">
+               <children>
+                  <Label fx:id="elevation" wrapText="true" />
+                  <Hyperlink fx:id="changeDestination" text="%summary.elevation.change" onAction="#changeDestination" />
+               </children>
+            </VBox>
+         </children>
+      </GridPane>
+      <TitledPane fx:id="elevatedCommands" text="%summary.elevation.commands" expanded="false" animated="false">
+         <content>
+            <TextArea fx:id="commandList" editable="false" prefRowCount="4" wrapText="false" />
+         </content>
+      </TitledPane>
+   </children>
+</VBox>
