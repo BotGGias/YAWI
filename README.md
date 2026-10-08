@@ -13,6 +13,8 @@ This Installers follows your rules. No Internet? Good, you provide the software.
 Install from Internet? Also good, you download the software.
 You can do whatever you want.
 
+To see screenshots of the wizard see the wiki https://github.com/BotGGias/YAWI/wiki
+
 # Packager
 A packager describes their product in an XML manifest file
 (components, data sources: bundled / HTTP / BitTorrent, commands per
